@@ -8,19 +8,23 @@ st.set_page_config(page_title="Familien Einkaufsliste", page_icon="🛒")
 # -------- Passwortschutz --------
 PASSWORD = "geheim123"  # Dein Passwort ohne extra Zeichen
 
+# -------- Session-State für Login --------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+# -------- Login-Bereich --------
 if not st.session_state.logged_in:
     st.title("🛒 Familien Einkaufsliste")
     user_password = st.text_input("Passwort eingeben", type="password")
     if st.button("Login"):
         if user_password == PASSWORD:
             st.session_state.logged_in = True
+            # Neu laden ohne Fehler
             st.experimental_rerun()
         else:
             st.error("Falsches Passwort!")
 else:
+    # -------- Hauptbereich der App --------
     st.title("🛒 Familien Einkaufsliste")
     st.success("Willkommen! ✅")
     st.caption("Tipp: Diese App läuft komplett lokal – keine Cloud nötig!")
@@ -32,7 +36,7 @@ else:
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             try:
                 data = json.load(f)
-            except:
+            except json.JSONDecodeError:
                 data = []
     else:
         data = []
@@ -59,10 +63,10 @@ else:
 
     # -------- Einkaufsliste anzeigen --------
     st.subheader("🧾 Einkaufsliste")
-
     if not data:
         st.info("Die Liste ist noch leer. Füge etwas hinzu!")
     else:
+        # Elemente durchgehen
         for i, item in enumerate(data):
             cols = st.columns([4, 2, 1])
             erledigt = cols[0].checkbox(
@@ -75,6 +79,7 @@ else:
                 data.pop(i)
                 with open(DATA_FILE, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
+                # Statt direktem rerun -> Session-Reset vermeiden
                 st.experimental_rerun()
             item["Erledigt"] = erledigt
 
