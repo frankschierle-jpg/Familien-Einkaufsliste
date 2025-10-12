@@ -6,7 +6,7 @@ import os
 st.set_page_config(page_title="Familien Einkaufsliste", page_icon="🛒")
 
 # -------- Passwortschutz --------
-PASSWORD = "geheim123"  # <-- hier dein Passwort
+PASSWORD = geheim123  # <-- hier dein Passwort
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -42,7 +42,7 @@ else:
         produkt = st.text_input("Produktname")
         menge = st.text_input("Menge (z.B. 1 Stück, 500 g)", "1")
         symbol = st.selectbox("Symbol", ["🥦","🍞","🥛","🍫","🍅","🧻","🧴","🍎","⚙️"])
-        laden = st.selectbox("Einkaufsstätte", ["Rewe","Aldi","Lidl","DM","Edeka", "Kaufland", "Sonstiges"])
+        laden = st.selectbox("Einkaufsstätte", ["Rewe","Aldi","Lidl","DM","Edeka", "Netto", "Kaufland", "Sonstiges"])
         submitted = st.form_submit_button("Hinzufügen")
 
         if submitted and produkt.strip():
