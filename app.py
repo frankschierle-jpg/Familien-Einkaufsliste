@@ -113,51 +113,22 @@ for item in data:
 # Kategorien + Produkte
 # =============================
 KATEGORIEN = {
-    "🍎 Obst": ["Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere","Blaubeere",
-                "Melone","Wassermelone","Mango","Ananas","Orange","Mandarine","Zitrone","Limette",
-                "Kiwi","Granatapfel","Feige","Aprikose","Passionsfrucht","Avocado","Cantaloupe",
-                "Papaya","Johannisbeere","Holunderbeere","Preiselbeere","Rhabarber","Clementine",
-                "Blutorange","Physalis","Nektarine","Brombeere","Boysenbeere","Kumquat","Sternfrucht",
-                "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Pflaume","Mandarinen","Heidelbeere",
-                "Stachelbeere","Traube rot","Traube grün","Litschi","Granatapfelkern"],
-    "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli",
-                 "Blumenkohl","Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete",
-                 "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
-                 "Spargel","Okra","Artischocke","Mangold","Wirsing","Rettich","Pak Choi","Chinakohl",
-                 "Bohnen","Linsen","Rosenkohl","Süßkartoffel","Pilze","Shiitake","Champignon"],
+    "🍎 Obst": ["Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere","Blaubeere"],
+    "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli"],
     "🥐 Frühstück": ["Kekse","Müsli","Haferflocken","Cookies","Hefegebäck","Cornflakes","Zimtbrötchen"],
-    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel",
-                     "Toast","Ciabatta","Baguette","Kaiserbrötchen","Laugensemmel","Schwarzbrot",
-                     "Dinkelbrot","Rosinenbrötchen","Focaccia","Pain de Campagne","Fladenbrot",
-                     "Pita","Bagel","Muffin"],
-    "🌭 Wurst": ["Salami","Schinken","Mortadella","Lyoner","Bratwurst","Weißwurst","Leberwurst",
-                "Cervelat","Bauernwurst","Mettwurst"],
-    "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Camembert","Feta","Parmesan","Edamer",
-                "Tilsiter","Bergkäse","Frischkäse","Ziegenkäse"],
-    "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter","Schmand","Kefir","Buttermilch",
-                            "Lassi","Molke","Frischmilch","Schlagsahne"],
-    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst",
-                   "Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
-    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen",
-                 "Makrele","Heilbutt","Hering","Scholle","Rotbarsch"],
-    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
-                               "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
-                               "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
-                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
-    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas",
-                         "Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade",
-                         "Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
-    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers",
-                   "Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
-    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
-                     "Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
-    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel",
-                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
-    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo",
-                   "Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
-    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
-                                       "Allzweckreiniger","Spülmittelflasche","Bodenreiniger",
-                                       "WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
+    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel"],
+    "🌭 Wurst": ["Salami","Schinken","Mortadella","Lyoner","Bratwurst"],
+    "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Camembert"],
+    "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter"],
+    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch"],
+    "🐟 Fisch": ["Lachs","Forelle","Thunfisch"],
+    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Reis","Spaghetti"],
+    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade"],
+    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel"],
+    "🍟 Salzgebäck": ["Chips","Salzstangen","Cracker"],
+    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo"],
+    "🥤 Getränke": ["Cola","Bier","Wasser"],
+    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger"],
     "⚙️ Sonstiges": []
 }
 
@@ -217,13 +188,47 @@ else:
 
             # Checkbox für gesamte Einkaufsstätte
             store_done_key = f"store_done_{store}"
-            mark_all = st.checkbox("", value=all(item["Erledigt"] for item in store_items), key=store_done_key)
+            all_done = all(item["Erledigt"] for item in store_items)
+            mark_all = st.checkbox("", value=all_done, key=store_done_key)
             if mark_all:
                 for item in store_items:
                     item["Erledigt"] = True
+            else:
+                for item in store_items:
+                    item["Erledigt"] = False
             save_data(DATA_FILE, data)
 
             for i, item in enumerate(store_items):
                 cols = st.columns([3,1,1,1])
                 bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
-                cols[0].markdown(f"<div style='background-color
+                cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
+                cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
+
+                # ✅ Toggle erledigt
+                if cols[2].button("✅", key=f"done_{store}_{i}"):
+                    item["Erledigt"] = not item["Erledigt"]
+                    save_data(DATA_FILE, data)
+                    safe_rerun()
+
+                # ❌ Löschen (direkt)
+                if cols[3].button("❌", key=f"delete_{store}_{i}"):
+                    data.remove(item)
+                    save_data(DATA_FILE, data)
+                    safe_rerun()
+
+# =============================
+# Archiv & PDF
+# =============================
+st.markdown("---")
+c1,c2 = st.columns(2)
+if c1.button("💾 Einkauf speichern"):
+    if data:
+        datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
+        save_data(filename, data)
+        st.success(f"Einkaufsliste als {filename} gespeichert!")
+
+if c2.button("📄 PDF exportieren"):
+    export_pdf(data)
+
+save_data(DATA_FILE, data)
