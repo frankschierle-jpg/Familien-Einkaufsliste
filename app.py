@@ -134,7 +134,7 @@ KATEGORIEN = {
     "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
                      "Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
     "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel",
-                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
+                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion","Preservativos"],
     "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo",
                    "Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
     "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
