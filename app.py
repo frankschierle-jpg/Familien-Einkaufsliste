@@ -25,29 +25,22 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
     if not data:
         pdf.cell(200, 10, txt="Liste ist leer.", ln=True)
     else:
-        kategorien_order = ["🍎 Obst", "🥦 Gemüse", "🥐 Frühstück", "🥨 Backwaren", "🌭 Wurst",
-                            "🧀 Käse", "🥛 Molkereiprodukte", "🥩 Fleisch", "🐟 Fisch",
-                            "🫘 (Trocken-)Konserven", "🍯 Brotaufstrich", "🍫 Süßwaren", "🍟 Salzgebäck",
-                            "🧴 Drogerie", "🥤 Getränke", "🧼 Wasch- und Reinigungsmittel", "⚙️ Sonstiges"]
-        # Nach Einkaufsstätte und Kategorie sortieren
-        data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"]) if x["Produktkategorie"] in kategorien_order else 999))
-        current_shop = ""
-        current_cat = ""
-        for item in data:
-            if item["Einkaufsstätte"] != current_shop:
-                current_shop = item["Einkaufsstätte"]
-                pdf.ln(5)
+        kategorien_order = [
+            "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🥨 Backwaren","🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte",
+            "🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven","🍯 Brotaufstrich","🍫 Süßwaren","🍟 Salzgebäck",
+            "🧴 Drogerie","🥤 Getränke","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
+        ]
+        for kat in kategorien_order:
+            items_in_cat = [x for x in data if x["Produktkategorie"] == kat]
+            if items_in_cat:
                 pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(200, 10, txt=f"Einkaufsstätte: {current_shop}", ln=True)
-                current_cat = ""
-            if item["Produktkategorie"] != current_cat:
-                current_cat = item["Produktkategorie"]
-                pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(200, 8, txt=current_cat, ln=True)
-            pdf.set_font("Helvetica", size=11)
-            status = "✅" if item["Erledigt"] else "⬜"
-            line = f"{status} {item['Produkt']} — {item['Menge']} von {item['Besteller']}"
-            pdf.cell(200, 7, txt=line, ln=True)
+                pdf.cell(200, 10, txt=kat, ln=True)
+                pdf.set_font("Helvetica", size=11)
+                for item in items_in_cat:
+                    status = "✅" if item["Erledigt"] else "⬜"
+                    line = f"{status} {item['Produkt']} — {item['Menge']} ({item['Einkaufsstätte']}) von {item['Besteller']}"
+                    pdf.cell(200, 8, txt=line, ln=True)
+                pdf.ln(5)
     pdf.output(filename)
     st.success(f"PDF '{filename}' wurde erstellt!")
 
@@ -83,13 +76,13 @@ if "logged_in" not in st.session_state:
 if not st.session_state.logged_in:
     st.title("🛒 Schierles Smart Shopper")
     with st.form("login_form", clear_on_submit=False):
-        user = st.text_input("👤 User", key="login_user")
+        user_input = st.text_input("👤 User", key="login_user")
         pw = st.text_input("🔑 Passwort", type="password", key="login_pw")
         submitted = st.form_submit_button("Login")
         if submitted:
-            if pw == PASSWORD and user.strip():
+            if pw == PASSWORD and user_input.strip():
                 st.session_state.logged_in = True
-                st.session_state.user = user.strip()
+                st.session_state.user = user_input.strip()
                 safe_rerun()
             else:
                 st.error("❌ Falsches Passwort oder kein Benutzername angegeben")
@@ -143,15 +136,28 @@ KATEGORIEN = {
                 "Tilsiter","Bergkäse","Frischkäse","Ziegenkäse"],
     "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter","Schmand","Kefir","Buttermilch",
                             "Lassi","Molke","Frischmilch","Schlagsahne"],
-    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
-    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen","Makrele","Heilbutt","Hering","Scholle","Rotbarsch"],
-    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti","Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt","Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous","Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
-    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas","Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade","Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
-    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers","Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
-    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs","Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
-    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel","Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
-    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo","Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
-    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs","Allzweckreiniger","Spülmittelflasche","Bodenreiniger","WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
+    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst",
+                   "Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
+    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen",
+                 "Makrele","Heilbutt","Hering","Scholle","Rotbarsch"],
+    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
+                               "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
+                               "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
+                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
+    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas",
+                         "Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade",
+                         "Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
+    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers",
+                   "Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
+    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
+                     "Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
+    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel",
+                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
+    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo",
+                   "Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
+    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
+                                       "Allzweckreiniger","Spülmittelflasche","Bodenreiniger",
+                                       "WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
     "⚙️ Sonstiges": []
 }
 
@@ -165,6 +171,7 @@ with st.form("add_item", clear_on_submit=True):
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
     laden = st.selectbox("Einkaufsstätte", sorted(["Aldi","DM","Edeka","Kaufland","Lidl","Rewe","Rossmann","Sonstiges"]))
 
+    # Nächste Übereinstimmung suchen
     produkt = produkt_input.strip()
     if len(produkt) >= 3:
         matches = difflib.get_close_matches(produkt, ALL_PRODUCTS, n=1, cutoff=0.6)
@@ -173,6 +180,7 @@ with st.form("add_item", clear_on_submit=True):
 
     submitted = st.form_submit_button("Hinzufügen")
     if submitted and produkt:
+        # Kategorie bestimmen
         kategorie = "⚙️ Sonstiges"
         for kat, items in KATEGORIEN.items():
             if produkt in items:
@@ -198,30 +206,25 @@ if not data:
     st.info("Liste ist leer.")
 else:
     alle_markieren = st.checkbox("✅ Alle markieren")
-    kategorien_order = ["🍎 Obst", "🥦 Gemüse", "🥐 Frühstück", "🥨 Backwaren", "🌭 Wurst",
-                        "🧀 Käse", "🥛 Molkereiprodukte", "🥩 Fleisch", "🐟 Fisch",
-                        "🫘 (Trocken-)Konserven", "🍯 Brotaufstrich", "🍫 Süßwaren", "🍟 Salzgebäck",
-                        "🧴 Drogerie", "🥤 Getränke", "🧼 Wasch- und Reinigungsmittel", "⚙️ Sonstiges"]
 
-    # Nach Einkaufsstätte und Kategorie sortieren
-    data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"]) if x["Produktkategorie"] in kategorien_order else 999))
+    kategorien_order = [
+        "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🥨 Backwaren","🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte",
+        "🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven","🍯 Brotaufstrich","🍫 Süßwaren","🍟 Salzgebäck",
+        "🧴 Drogerie","🥤 Getränke","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
+    ]
+    def sort_key(item):
+        return (item["Einkaufsstätte"], kategorien_order.index(item["Produktkategorie"]))
+    data.sort(key=sort_key)
 
-    current_shop = ""
-    current_cat = ""
     for i, item in enumerate(data):
-        if item["Einkaufsstätte"] != current_shop:
-            current_shop = item["Einkaufsstätte"]
-            st.markdown(f"### Einkaufsstätte: {current_shop}")
-            current_cat = ""
-        if item["Produktkategorie"] != current_cat:
-            current_cat = item["Produktkategorie"]
-            st.markdown(f"**{current_cat}**")
         cols = st.columns([3,1,1,1,1])
         bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
-        cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
+        cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
+        cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Einkaufsstätte']}</div>", unsafe_allow_html=True)
+        cols[2].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
+
         # ✅ Toggle erledigt
-        if cols[2].button("✅", key=f"done{i}"):
+        if cols[3].button("✅", key=f"done{i}"):
             if alle_markieren:
                 for it in data:
                     it["Erledigt"] = not it["Erledigt"]
@@ -229,14 +232,21 @@ else:
                 item["Erledigt"] = not item["Erledigt"]
             save_data(DATA_FILE, data)
             safe_rerun()
+
         # ❌ Löschen
-        if cols[3].button("❌", key=f"del{i}"):
+        if cols[4].button("❌", key=f"del{i}"):
             if alle_markieren:
-                data.clear()
+                with st.modal("Alle Produkte löschen?"):
+                    if st.button("Ja, alles löschen"):
+                        data = []
+                        save_data(DATA_FILE, data)
+                        safe_rerun()
             else:
-                data.pop(i)
-            save_data(DATA_FILE, data)
-            safe_rerun()
+                with st.modal(f"{item['Produkt']} löschen?"):
+                    if st.button("Ja, löschen"):
+                        data.pop(i)
+                        save_data(DATA_FILE, data)
+                        safe_rerun()
 
 # =============================
 # Archiv & PDF
@@ -248,4 +258,9 @@ if c1.button("💾 Einkauf speichern"):
         datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
         filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
         save_data(filename, data)
-        st
+        st.success(f"Einkaufsliste als {filename} gespeichert!")
+
+if c2.button("📄 PDF exportieren"):
+    export_pdf(data)
+
+save_data(DATA_FILE, data)
