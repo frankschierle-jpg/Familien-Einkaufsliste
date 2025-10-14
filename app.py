@@ -29,17 +29,22 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
                             "🧀 Käse", "🥛 Molkereiprodukte", "🥩 Fleisch", "🐟 Fisch",
                             "🫘 (Trocken-)Konserven", "🍯 Brotaufstrich", "🍫 Süßwaren", "🍟 Salzgebäck",
                             "🧴 Drogerie", "🥤 Getränke", "🧼 Wasch- und Reinigungsmittel", "⚙️ Sonstiges"]
-        for kat in kategorien_order:
-            items_in_cat = [x for x in data if x["Produktkategorie"] == kat]
-            if items_in_cat:
+        # Zunächst nach Einkaufsstätte sortieren
+        data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"]) if x["Produktkategorie"] in kategorien_order else 999))
+        current_shop = ""
+        for item in data:
+            if item["Einkaufsstätte"] != current_shop:
+                current_shop = item["Einkaufsstätte"]
                 pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(200, 10, txt=kat, ln=True)
-                pdf.set_font("Helvetica", size=11)
-                for item in items_in_cat:
-                    status = "✅" if item["Erledigt"] else "⬜"
-                    line = f"{status} {item['Produkt']} — {item['Menge']} ({item['Einkaufsstätte']}) von {item['Besteller']}"
-                    pdf.cell(200, 8, txt=line, ln=True)
-                pdf.ln(5)
+                pdf.cell(200, 10, txt=f"Einkaufsstätte: {current_shop}", ln=True)
+            # Kategorie header
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.cell(200, 10, txt=item["Produktkategorie"], ln=True)
+            pdf.set_font("Helvetica", size=11)
+            status = "✅" if item["Erledigt"] else "⬜"
+            line = f"{status} {item['Produkt']} — {item['Menge']} von {item['Besteller']}"
+            pdf.cell(200, 8, txt=line, ln=True)
+            pdf.ln(2)
     pdf.output(filename)
     st.success(f"PDF '{filename}' wurde erstellt!")
 
@@ -135,28 +140,15 @@ KATEGORIEN = {
                 "Tilsiter","Bergkäse","Frischkäse","Ziegenkäse"],
     "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter","Schmand","Kefir","Buttermilch",
                             "Lassi","Molke","Frischmilch","Schlagsahne"],
-    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst",
-                   "Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
-    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen",
-                 "Makrele","Heilbutt","Hering","Scholle","Rotbarsch"],
-    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
-                               "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
-                               "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
-                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
-    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas",
-                         "Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade",
-                         "Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
-    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers",
-                   "Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
-    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
-                     "Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
-    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel",
-                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
-    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo",
-                   "Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
-    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
-                                       "Allzweckreiniger","Spülmittelflasche","Bodenreiniger",
-                                       "WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
+    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
+    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen","Makrele","Heilbutt","Hering","Scholle","Rotbarsch"],
+    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti","Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt","Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous","Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
+    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas","Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade","Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
+    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers","Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
+    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs","Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
+    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel","Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
+    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo","Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
+    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs","Allzweckreiniger","Spülmittelflasche","Bodenreiniger","WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
     "⚙️ Sonstiges": []
 }
 
@@ -203,11 +195,13 @@ if not data:
     st.info("Liste ist leer.")
 else:
     alle_markieren = st.checkbox("✅ Alle markieren")
+    kategorien_order = ["🍎 Obst", "🥦 Gemüse", "🥐 Frühstück", "🥨 Backwaren", "🌭 Wurst",
+                        "🧀 Käse", "🥛 Molkereiprodukte", "🥩 Fleisch", "🐟 Fisch",
+                        "🫘 (Trocken-)Konserven", "🍯 Brotaufstrich", "🍫 Süßwaren", "🍟 Salzgebäck",
+                        "🧴 Drogerie", "🥤 Getränke", "🧼 Wasch- und Reinigungsmittel", "⚙️ Sonstiges"]
 
-    # Sortierung nach Einkaufsstätte und Kategorie
-    def sort_key(item):
-        return (item["Einkaufsstätte"], item["Produktkategorie"])
-    data.sort(key=sort_key)
+    # Sortieren nach Einkaufsstätte und Kategorienreihenfolge
+    data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"]) if x["Produktkategorie"] in kategorien_order else 999))
 
     for i, item in enumerate(data):
         cols = st.columns([3,1,1,1,1])
@@ -219,29 +213,21 @@ else:
         # ✅ Toggle erledigt
         if cols[3].button("✅", key=f"done{i}"):
             if alle_markieren:
-                if st.confirm("Willst du wirklich alle Produkte als erledigt markieren?"):
-                    for it in data:
-                        it["Erledigt"] = True
-                    save_data(DATA_FILE, data)
-                    safe_rerun()
+                for it in data:
+                    it["Erledigt"] = not it["Erledigt"]
             else:
-                if st.confirm(f"{item['Produkt']} als erledigt markieren?"):
-                    item["Erledigt"] = not item["Erledigt"]
-                    save_data(DATA_FILE, data)
-                    safe_rerun()
+                item["Erledigt"] = not item["Erledigt"]
+            save_data(DATA_FILE, data)
+            safe_rerun()
 
         # ❌ Löschen
         if cols[4].button("❌", key=f"del{i}"):
             if alle_markieren:
-                if st.confirm("Willst du wirklich alle Produkte löschen?"):
-                    data = []
-                    save_data(DATA_FILE, data)
-                    safe_rerun()
+                data.clear()
             else:
-                if st.confirm(f"{item['Produkt']} wirklich löschen?"):
-                    data.pop(i)
-                    save_data(DATA_FILE, data)
-                    safe_rerun()
+                data.pop(i)
+            save_data(DATA_FILE, data)
+            safe_rerun()
 
 # =============================
 # Archiv & PDF
@@ -250,12 +236,4 @@ st.markdown("---")
 c1,c2 = st.columns(2)
 if c1.button("💾 Einkauf speichern"):
     if data:
-        datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
-        save_data(filename, data)
-        st.success(f"Einkaufsliste als {filename} gespeichert!")
-
-if c2.button("📄 PDF exportieren"):
-    export_pdf(data)
-
-save_data(DATA_FILE, data)
+        datum = datetime.now().strftime("%Y-%m-%d_%H-%
