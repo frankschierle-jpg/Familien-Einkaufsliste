@@ -68,21 +68,23 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     st.title("🛒 Familien Einkaufsliste")
-    user = st.text_input("👤 User")
-    pw = st.text_input("🔑 Passwort", type="password")
-    if st.button("Login"):
-        if pw == PASSWORD and user.strip():
-            st.session_state.logged_in = True
-            st.session_state.user = user.strip()
-            safe_rerun()
-        else:
-            st.error("❌ Falsches Passwort oder kein Benutzername angegeben")
+    with st.form("login_form", clear_on_submit=False):
+        user = st.text_input("👤 User", key="login_user")
+        pw = st.text_input("🔑 Passwort", type="password", key="login_pw")
+        submitted = st.form_submit_button("Login")
+        if submitted:
+            if pw == PASSWORD and user.strip():
+                st.session_state.logged_in = True
+                st.session_state.user = user.strip()
+                safe_rerun()
+            else:
+                st.error("❌ Falsches Passwort oder kein Benutzername angegeben")
     st.stop()
 
 # =============================
 # Hauptseite
 # =============================
-st.title("🛒 Familien Einkaufsliste")
+st.title("🛒 Familien-Einkaufsliste")
 st.write(f"Angemeldet als: **{st.session_state.user}**")
 if st.button("🚪 Logout"):
     st.session_state.logged_in = False
@@ -160,15 +162,15 @@ ALL_PRODUCTS = sorted(list({p for items in KATEGORIEN.values() for p in items}))
 # Neues Produkt hinzufügen
 # =============================
 with st.form("add_item", clear_on_submit=True):
-    input_text = st.text_input("Produktname (ab 3 Buchstaben)")
+    produkt = st.text_input("Produktname (ab 3 Buchstaben)", key="produkt_autocomplete")
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
-    laden = st.selectbox("Einkaufsstätte", ["Rewe","Aldi","Lidl","DM","Edeka","Kaufland","Sonstiges"])
+    laden = st.selectbox("Einkaufsstätte", ["Aldi","DM","Edeka","Lidl","Kaufland","Rewe","Sonstiges"])
 
-    produkt = input_text.strip()
-    if len(produkt) >= 3:
+    # Autocomplete Filter direkt im Eingabefeld
+    if len(produkt.strip()) >= 3:
         matches = [p for p in ALL_PRODUCTS if produkt.lower() in p.lower()]
         if matches:
-            produkt = st.selectbox("Produkt auswählen", options=matches, index=0)
+            produkt = matches[0]  # automatisch das erste Match nehmen
 
     submitted = st.form_submit_button("Hinzufügen")
     if submitted and produkt:
@@ -205,7 +207,6 @@ else:
         cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Einkaufsstätte']}</div>", unsafe_allow_html=True)
         cols[2].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
 
-        # Grüner Haken: erledigt
         if cols[3].button("✅", key=f"done{i}"):
             if alle_markieren:
                 if st.confirm("Willst du wirklich alle Produkte als erledigt markieren?"):
@@ -216,7 +217,6 @@ else:
             save_data(DATA_FILE, data)
             safe_rerun()
 
-        # Rotes X: löschen
         if cols[4].button("❌", key=f"del{i}"):
             if alle_markieren:
                 if st.confirm("Willst du wirklich alle Produkte löschen?"):
