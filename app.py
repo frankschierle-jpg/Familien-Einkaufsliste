@@ -26,10 +26,9 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
         pdf.cell(200, 10, txt="Liste ist leer.", ln=True)
     else:
         kategorien_order = [
-            "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren",
-            "🥨 Backwaren","🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte","🥩 Fleisch",
-            "🐟 Fisch","🫘 (Trocken-)Konserven","🍟 Salzgebäck","🥤 Getränke",
-            "🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
+            "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren","🥨 Backwaren",
+            "🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte","🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven",
+            "🍟 Salzgebäck","🥤 Getränke","🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
         ]
         for kat in kategorien_order:
             items_in_cat = [x for x in data if x["Produktkategorie"] == kat]
@@ -205,28 +204,31 @@ if not data:
     st.info("Liste ist leer.")
 else:
     alle_markieren = st.checkbox("✅ Alle markieren")
+    if alle_markieren:
+        for item in data:
+            item["Erledigt"] = True
+        save_data(DATA_FILE, data)
+        safe_rerun()
 
-    # Checkbox pro Einkaufsstätte
+    # Checkbox pro Einkaufsstätte (Toggle)
     unique_stores = sorted(list({x["Einkaufsstätte"] for x in data}))
     store_checkbox_state = {}
     for store in unique_stores:
-        s_cols = st.columns([0.1, 0.9])
-        store_checkbox_state[store] = s_cols[0].checkbox("", key=f"store_{store}", value=alle_markieren)
-        s_cols[1].markdown(f"**{store}**")
+        key_store = f"store_{store}"
+        store_checkbox_state[store] = st.checkbox("", key=key_store)
         for item in data:
             if item["Einkaufsstätte"] == store:
                 item["Erledigt"] = store_checkbox_state[store]
-    save_data(DATA_FILE, data)
+        save_data(DATA_FILE, data)
 
+    # Sortieren: zuerst Einkaufsstätte, dann Kategorie-Order
     kategorien_order = [
-        "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren",
-        "🥨 Backwaren","🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte","🥩 Fleisch",
-        "🐟 Fisch","🫘 (Trocken-)Konserven","🍟 Salzgebäck","🥤 Getränke",
-        "🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
+        "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren","🥨 Backwaren",
+        "🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte","🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven",
+        "🍟 Salzgebäck","🥤 Getränke","🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
     ]
     data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"])))
 
-    # Produkte anzeigen
     for i, item in enumerate(data):
         cols = st.columns([3,1,1,1,1])
         bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
@@ -234,7 +236,8 @@ else:
         cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Einkaufsstätte']}</div>", unsafe_allow_html=True)
         cols[2].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
 
-        if cols[3].button("✅", key=f"done{i}"):
+        # ✅ Toggle erledigt
+        if cols[3].button("✅", key=f"done_{i}"):
             item["Erledigt"] = not item["Erledigt"]
             save_data(DATA_FILE, data)
             safe_rerun()
@@ -245,7 +248,7 @@ else:
             st.session_state[f"modal_delete_{i}"] = True
 
         if st.session_state.get(f"modal_delete_{i}", False):
-            with st.modal():
+            with st.modal(f"Löschen bestätigen {i}"):
                 st.write(f"Möchtest du **{item['Produkt']}** wirklich löschen?")
                 if st.button("Ja, löschen", key=f"confirm_{i}"):
                     data.pop(i)
