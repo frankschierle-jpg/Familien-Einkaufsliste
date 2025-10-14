@@ -67,7 +67,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-    st.title("🛒 Familien Einkaufsliste")
+    st.title("🛒 Familien-Einkaufsliste")
     with st.form("login_form", clear_on_submit=False):
         user = st.text_input("👤 User", key="login_user")
         pw = st.text_input("🔑 Passwort", type="password", key="login_pw")
@@ -128,7 +128,7 @@ KATEGORIEN = {
                 "Cervelat","Bauernwurst","Mettwurst"],
     "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter","Schmand","Kefir","Buttermilch",
                             "Lassi","Molke","Frischmilch","Schlagsahne"],
-    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel","Bretzel"
+    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel","Bretzel",
                      "Toast","Ciabatta","Baguette","Kaiserbrötchen","Laugensemmel","Schwarzbrot",
                      "Dinkelbrot","Rosinenbrötchen","Focaccia","Pain de Campagne","Fladenbrot",
                      "Pita","Bagel","Muffin"],
