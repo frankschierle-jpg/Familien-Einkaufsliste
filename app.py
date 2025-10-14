@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import os
 from datetime import datetime
+import difflib
 
 # =============================
 # PDF optional importieren
@@ -67,7 +68,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-    st.title("🛒 Familien-Einkaufsliste")
+    st.title("🛒 Smartshopper")
     with st.form("login_form", clear_on_submit=False):
         user = st.text_input("👤 User", key="login_user")
         pw = st.text_input("🔑 Passwort", type="password", key="login_pw")
@@ -84,7 +85,7 @@ if not st.session_state.logged_in:
 # =============================
 # Hauptseite
 # =============================
-st.title("🛒 Familien-Einkaufsliste")
+st.title("🛒 Smartshopper")
 st.write(f"Angemeldet als: **{st.session_state.user}**")
 if st.button("🚪 Logout"):
     st.session_state.logged_in = False
@@ -128,7 +129,7 @@ KATEGORIEN = {
                 "Cervelat","Bauernwurst","Mettwurst"],
     "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter","Schmand","Kefir","Buttermilch",
                             "Lassi","Molke","Frischmilch","Schlagsahne"],
-    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel","Bretzel",
+    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel",
                      "Toast","Ciabatta","Baguette","Kaiserbrötchen","Laugensemmel","Schwarzbrot",
                      "Dinkelbrot","Rosinenbrötchen","Focaccia","Pain de Campagne","Fladenbrot",
                      "Pita","Bagel","Muffin"],
@@ -153,27 +154,26 @@ KATEGORIEN = {
     "⚙️ Sonstiges": []
 }
 
-# =============================
-# Produktliste flach für Autovervollständigung
-# =============================
 ALL_PRODUCTS = sorted(list({p for items in KATEGORIEN.values() for p in items}))
 
 # =============================
 # Neues Produkt hinzufügen
 # =============================
 with st.form("add_item", clear_on_submit=True):
-    produkt = st.text_input("Produktname (ab 3 Buchstaben)", key="produkt_autocomplete")
+    produkt_input = st.text_input("Produktname (ab 3 Buchstaben)")
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
-    laden = st.selectbox("Einkaufsstätte", ["Aldi","DM","Edeka","Lidl","Kaufland","Rewe","Sonstiges"])
+    laden = st.selectbox("Einkaufsstätte", ["Aldi","DM","Edeka","Kaufland","Lidl","Netto","Rewe","Rossmann","Sonstiges"])
 
-    # Autocomplete Filter direkt im Eingabefeld
-    if len(produkt.strip()) >= 3:
-        matches = [p for p in ALL_PRODUCTS if produkt.lower() in p.lower()]
+    # Näheste Übereinstimmung suchen
+    produkt = produkt_input.strip()
+    if len(produkt) >= 3:
+        matches = difflib.get_close_matches(produkt, ALL_PRODUCTS, n=1, cutoff=0.6)
         if matches:
-            produkt = matches[0]  # automatisch das erste Match nehmen
+            produkt = matches[0]
 
     submitted = st.form_submit_button("Hinzufügen")
     if submitted and produkt:
+        # Kategorie bestimmen
         kategorie = "⚙️ Sonstiges"
         for kat, items in KATEGORIEN.items():
             if produkt in items:
@@ -199,7 +199,6 @@ if not data:
     st.info("Liste ist leer.")
 else:
     alle_markieren = st.checkbox("✅ Alle markieren")
-
     for i, item in enumerate(data):
         cols = st.columns([3,1,1,1,1])
         bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
@@ -207,20 +206,20 @@ else:
         cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Einkaufsstätte']}</div>", unsafe_allow_html=True)
         cols[2].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
 
+        # ✅ Erledigt
         if cols[3].button("✅", key=f"done{i}"):
             if alle_markieren:
-                if st.confirm("Willst du wirklich alle Produkte als erledigt markieren?"):
-                    for it in data:
-                        it["Erledigt"] = True
+                for it in data:
+                    it["Erledigt"] = True
             else:
                 item["Erledigt"] = True
             save_data(DATA_FILE, data)
             safe_rerun()
 
+        # ❌ Löschen
         if cols[4].button("❌", key=f"del{i}"):
             if alle_markieren:
-                if st.confirm("Willst du wirklich alle Produkte löschen?"):
-                    data = []
+                data = []
             else:
                 data.pop(i)
             save_data(DATA_FILE, data)
