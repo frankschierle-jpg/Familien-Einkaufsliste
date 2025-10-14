@@ -197,7 +197,7 @@ with st.form("add_item", clear_on_submit=True):
         st.success(f"{kategorie} {produkt} hinzugefügt!")
 
 # =============================
-# Einkaufsliste anzeigen nach Einkaufsstätte
+# Einkaufsliste anzeigen
 # =============================
 st.subheader("🧾 Einkaufsliste")
 if not data:
@@ -217,57 +217,13 @@ else:
 
             # Checkbox für gesamte Einkaufsstätte
             store_done_key = f"store_done_{store}"
-            all_done = all(item["Erledigt"] for item in store_items)
-            mark_all = st.checkbox(f"✅ Alles in {store} erledigen", value=all_done, key=store_done_key)
+            mark_all = st.checkbox("", value=all(item["Erledigt"] for item in store_items), key=store_done_key)
             if mark_all:
                 for item in store_items:
                     item["Erledigt"] = True
-            else:
-                for item in store_items:
-                    item["Erledigt"] = False
             save_data(DATA_FILE, data)
 
             for i, item in enumerate(store_items):
-                cols = st.columns([3,1,1,1,1])
+                cols = st.columns([3,1,1,1])
                 bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
-                cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
-                cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
-
-                # ✅ Toggle erledigt
-                if cols[2].button("✅", key=f"done_{store}_{i}"):
-                    item["Erledigt"] = not item["Erledigt"]
-                    save_data(DATA_FILE, data)
-                    safe_rerun()
-
-                # ❌ Löschen
-                if cols[3].button("❌", key=f"delete_{store}_{i}"):
-                    st.session_state[f"delete_confirm_{store}_{i}"] = True
-
-                if st.session_state.get(f"delete_confirm_{store}_{i}", False):
-                    with st.expander(f"Löschen bestätigen {item['Produkt']}"):
-                        st.write(f"Möchtest du **{item['Produkt']}** wirklich löschen?")
-                        if st.button("Ja, löschen", key=f"confirm_{store}_{i}"):
-                            data.remove(item)
-                            save_data(DATA_FILE, data)
-                            st.session_state[f"delete_confirm_{store}_{i}"] = False
-                            safe_rerun()
-                        if st.button("Abbrechen", key=f"cancel_{store}_{i}"):
-                            st.session_state[f"delete_confirm_{store}_{i}"] = False
-                            safe_rerun()
-
-# =============================
-# Archiv & PDF
-# =============================
-st.markdown("---")
-c1,c2 = st.columns(2)
-if c1.button("💾 Einkauf speichern"):
-    if data:
-        datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
-        save_data(filename, data)
-        st.success(f"Einkaufsliste als {filename} gespeichert!")
-
-if c2.button("📄 PDF exportieren"):
-    export_pdf(data)
-
-save_data(DATA_FILE, data)
+                cols[0].markdown(f"<div style='background-color
