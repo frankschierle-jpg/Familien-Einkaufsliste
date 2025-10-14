@@ -105,7 +105,7 @@ KATEGORIEN = {
                 "Kiwi","Granatapfel","Feige","Aprikose","Passionsfrucht","Avocado","Cantaloupe",
                 "Papaya","Johannisbeere","Holunderbeere","Preiselbeere","Rhabarber","Clementine",
                 "Blutorange","Physalis","Nektarine","Brombeere","Boysenbeere","Kumquat","Sternfrucht",
-                "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Erdbeer-Nutella Mix","Pflaume",
+                "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Pflaume",
                 "Mandarinen","Heidelbeere","Stachelbeere","Traube rot","Traube grün","Kaki","Litschi",
                 "Granatapfelkern"],
     "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli",
