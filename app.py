@@ -147,30 +147,26 @@ KATEGORIEN = {
 }
 
 # =============================
-# Produktliste flach für Dropdown
+# Produktliste flach für Autovervollständigung
 # =============================
-ALL_PRODUCTS = []
-for items in KATEGORIEN.values():
-    ALL_PRODUCTS.extend(items)
-ALL_PRODUCTS = sorted(list(set(ALL_PRODUCTS)))  # doppelte entfernen
+ALL_PRODUCTS = sorted(list({p for items in KATEGORIEN.values() for p in items}))
 
 # =============================
-# Neues Produkt hinzufügen mit Dropdown
+# Neues Produkt hinzufügen
 # =============================
 with st.form("add_item", clear_on_submit=True):
     input_text = st.text_input("Produktname (ab 3 Buchstaben)")
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
     laden = st.selectbox("Einkaufsstätte", ["Rewe","Aldi","Lidl","DM","Edeka","Kaufland","Sonstiges"])
 
-    # Dropdown mit Filter
-    auswahl = []
-    if len(input_text.strip()) >= 3:
-        auswahl = [p for p in ALL_PRODUCTS if input_text.lower() in p.lower()]
-    produkt = st.selectbox("Produkt auswählen", options=auswahl) if auswahl else input_text.strip()
+    produkt = input_text.strip()
+    if len(produkt) >= 3:
+        matches = [p for p in ALL_PRODUCTS if produkt.lower() in p.lower()]
+        if matches:
+            produkt = st.selectbox("Vorschläge:", options=matches, index=0)
 
     submitted = st.form_submit_button("Hinzufügen")
     if submitted and produkt:
-        # Kategorie bestimmen
         kategorie = "⚙️ Sonstiges"
         for kat, items in KATEGORIEN.items():
             if produkt in items:
@@ -188,26 +184,31 @@ with st.form("add_item", clear_on_submit=True):
         st.success(f"{kategorie} {produkt} hinzugefügt!")
 
 # =============================
-# Einkaufsliste anzeigen
+# Einkaufsliste anzeigen mit toggle-fähiger "Alles markieren"
 # =============================
 st.subheader("🧾 Einkaufsliste")
 if not data:
     st.info("Liste ist leer.")
 else:
-    alle_markieren = st.checkbox("✅ Alles markieren/entmarkieren")
+    alle_erledigt = all(item["Erledigt"] for item in data)
+    alles_markieren = st.checkbox("✅ Alles markieren", value=alle_erledigt)
+
+    if alles_markieren != alle_erledigt:
+        for item in data:
+            item["Erledigt"] = alles_markieren
+        save_data(DATA_FILE, data)
+        safe_rerun()
+
     for i, item in enumerate(data):
-        if alle_markieren:
-            item["Erledigt"] = True
-        cols = st.columns([4,2,1])
-        erledigt = cols[0].checkbox(
-            f"{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}",
-            value=item["Erledigt"],
-            key=f"chk{i}"
-        )
+        cols = st.columns([4,2,1,1])
+        cols[0].write(f"{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}")
         cols[1].write(item["Einkaufsstätte"])
-        if cols[2].button("❌", key=f"del{i}"):
+        if cols[2].button("✅", key=f"done{i}"):
+            item["Erledigt"] = True
+            save_data(DATA_FILE, data)
+            safe_rerun()
+        if cols[3].button("❌", key=f"del{i}"):
             st.session_state["to_delete"] = {"index": i, "produkt": item["Produkt"], "kategorie": item["Produktkategorie"]}
-        item["Erledigt"] = erledigt
 
 # =============================
 # Löschbestätigung
@@ -229,17 +230,17 @@ if "to_delete" in st.session_state:
         st.info("Löschen abgebrochen.")
 
 # =============================
-# Buttons: Alles erledigen / Alles löschen / Archiv / PDF
+# Buttons unten
 # =============================
 st.markdown("---")
 c1,c2,c3,c4 = st.columns(4)
-if c1.button("✅ Alles erledigen"):
+if c1.button("✅ Erledigt"):
     for item in data:
         item["Erledigt"] = True
     save_data(DATA_FILE, data)
     safe_rerun()
 
-if c2.button("🗑️ Alles löschen"):
+if c2.button("🗑️ Löschen"):
     data = []
     save_data(DATA_FILE, data)
     safe_rerun()
