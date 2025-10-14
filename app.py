@@ -91,25 +91,30 @@ os.makedirs(ARCHIV_DIR, exist_ok=True)
 
 data = load_data(DATA_FILE)
 
+# Alte Daten kompatibel machen
+for item in data:
+    if "Produktkategorie" not in item:
+        if "Symbol" in item:
+            item["Produktkategorie"] = item["Symbol"]
+        else:
+            item["Produktkategorie"] = "⚙️ Sonstiges"
+
 # =============================
-# Kategorien + Produktliste (mit Marken)
+# Kategorien + Produktliste (inkl. Marken)
 # =============================
 KATEGORIEN = {
-    "🍎 Obst": [
-        "Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere","Blaubeere",
-        "Melone","Wassermelone","Mango","Ananas","Orange","Mandarine","Zitrone","Limette","Kiwi",
-        "Granatapfel","Feige","Aprikose","Passionsfrucht","Avocado","Cantaloupe","Papaya","Johannisbeere",
-        "Holunderbeere","Preiselbeere","Rhabarber","Clementine","Blutorange","Physalis","Nektarine",
-        "Mirabelle","Brombeere","Boysenbeere","Kumquat","Sternfrucht","Guave","Drachenfrucht","Kaki",
-        "Maracuja","Pomelo","Erdbeer-Nutella Mix"
-    ],
-    "🥦 Gemüse": [
-        "Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli","Blumenkohl",
-        "Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete","Kohl","Spinat","Feldsalat",
-        "Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen","Spargel","Okra","Artischocke","Mangold",
-        "Wirsing","Rettich","Kresse","Pak Choi","Chinakohl","Bohnen","Linsen","Rosenkohl","Auberginenmark",
-        "Süßkartoffel","Algen","Pilze","Shiitake","Austernpilz","Champignon"
-    ],
+    "🍎 Obst": ["Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere",
+                "Blaubeere","Melone","Wassermelone","Mango","Ananas","Orange","Mandarine",
+                "Zitrone","Limette","Kiwi","Granatapfel","Feige","Aprikose","Passionsfrucht",
+                "Avocado","Cantaloupe","Papaya","Johannisbeere","Holunderbeere","Preiselbeere",
+                "Rhabarber","Clementine","Blutorange","Physalis","Nektarine","Brombeere",
+                "Boysenbeere","Kumquat","Sternfrucht","Guave","Drachenfrucht","Kaki","Maracuja",
+                "Pomelo","Erdbeer-Nutella Mix"],
+    "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli",
+                "Blumenkohl","Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete",
+                "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
+                "Spargel","Okra","Artischocke","Mangold","Wirsing","Rettich","Pak Choi","Chinakohl",
+                "Bohnen","Linsen","Rosenkohl","Süßkartoffel","Pilze","Shiitake","Champignon"],
     "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst"],
     "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau"],
     "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Camembert","Feta"],
@@ -126,6 +131,8 @@ KATEGORIEN = {
 }
 
 def finde_kategorie(produkt):
+    if len(produkt.strip()) < 3:
+        return "⚙️ Sonstiges"
     p = produkt.lower()
     for kat, items in KATEGORIEN.items():
         for i in items:
@@ -141,6 +148,11 @@ with st.form("add_item", clear_on_submit=True):
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
     laden = st.selectbox("Einkaufsstätte", ["Rewe", "Aldi", "Lidl", "DM", "Edeka", "Kaufland", "Sonstiges"])
     submitted = st.form_submit_button("Hinzufügen")
+
+    if produkt.strip():
+        erkannte_kategorie = finde_kategorie(produkt)
+        st.info(f"Automatisch erkannte Kategorie: {erkannte_kategorie}")
+
     if submitted and produkt.strip():
         kategorie = finde_kategorie(produkt)
         neues_item = {
