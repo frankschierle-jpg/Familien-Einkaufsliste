@@ -197,67 +197,63 @@ with st.form("add_item", clear_on_submit=True):
         st.success(f"{kategorie} {produkt} hinzugefügt!")
 
 # =============================
-# Einkaufsliste anzeigen
+# Einkaufsliste anzeigen nach Einkaufsstätte
 # =============================
 st.subheader("🧾 Einkaufsliste")
 if not data:
     st.info("Liste ist leer.")
 else:
-    alle_markieren = st.checkbox("✅ Alle markieren")
-    if alle_markieren:
-        for item in data:
-            item["Erledigt"] = True
-        save_data(DATA_FILE, data)
-        safe_rerun()
-
-    # Checkbox pro Einkaufsstätte (Toggle)
-    unique_stores = sorted(list({x["Einkaufsstätte"] for x in data}))
-    store_checkbox_state = {}
-    for store in unique_stores:
-        key_store = f"store_{store}"
-        store_checkbox_state[store] = st.checkbox("", key=key_store)
-        for item in data:
-            if item["Einkaufsstätte"] == store:
-                item["Erledigt"] = store_checkbox_state[store]
-        save_data(DATA_FILE, data)
-
-    # Sortieren: zuerst Einkaufsstätte, dann Kategorie-Order
     kategorien_order = [
         "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren","🥨 Backwaren",
         "🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte","🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven",
         "🍟 Salzgebäck","🥤 Getränke","🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
     ]
-    data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"])))
 
-    for i, item in enumerate(data):
-        cols = st.columns([3,1,1,1,1])
-        bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
-        cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Einkaufsstätte']}</div>", unsafe_allow_html=True)
-        cols[2].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
+    unique_stores = sorted(list({x["Einkaufsstätte"] for x in data}))
+    for store in unique_stores:
+        with st.expander(f"🛍 {store}", expanded=True):
+            store_items = [x for x in data if x["Einkaufsstätte"] == store]
+            store_items.sort(key=lambda x: kategorien_order.index(x["Produktkategorie"]))
 
-        # ✅ Toggle erledigt
-        if cols[3].button("✅", key=f"done_{i}"):
-            item["Erledigt"] = not item["Erledigt"]
+            # Checkbox für gesamte Einkaufsstätte
+            store_done_key = f"store_done_{store}"
+            all_done = all(item["Erledigt"] for item in store_items)
+            mark_all = st.checkbox(f"✅ Alles in {store} erledigen", value=all_done, key=store_done_key)
+            if mark_all:
+                for item in store_items:
+                    item["Erledigt"] = True
+            else:
+                for item in store_items:
+                    item["Erledigt"] = False
             save_data(DATA_FILE, data)
-            safe_rerun()
 
-        # ❌ Löschen
-        delete_key = f"delete_{i}"
-        if cols[4].button("❌", key=delete_key):
-            st.session_state[f"modal_delete_{i}"] = True
+            for i, item in enumerate(store_items):
+                cols = st.columns([3,1,1,1,1])
+                bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
+                cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
+                cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
 
-        if st.session_state.get(f"modal_delete_{i}", False):
-            with st.modal(f"Löschen bestätigen {i}"):
-                st.write(f"Möchtest du **{item['Produkt']}** wirklich löschen?")
-                if st.button("Ja, löschen", key=f"confirm_{i}"):
-                    data.pop(i)
+                # ✅ Toggle erledigt
+                if cols[2].button("✅", key=f"done_{store}_{i}"):
+                    item["Erledigt"] = not item["Erledigt"]
                     save_data(DATA_FILE, data)
-                    st.session_state[f"modal_delete_{i}"] = False
                     safe_rerun()
-                if st.button("Abbrechen", key=f"cancel_{i}"):
-                    st.session_state[f"modal_delete_{i}"] = False
-                    safe_rerun()
+
+                # ❌ Löschen
+                if cols[3].button("❌", key=f"delete_{store}_{i}"):
+                    st.session_state[f"delete_confirm_{store}_{i}"] = True
+
+                if st.session_state.get(f"delete_confirm_{store}_{i}", False):
+                    with st.expander(f"Löschen bestätigen {item['Produkt']}"):
+                        st.write(f"Möchtest du **{item['Produkt']}** wirklich löschen?")
+                        if st.button("Ja, löschen", key=f"confirm_{store}_{i}"):
+                            data.remove(item)
+                            save_data(DATA_FILE, data)
+                            st.session_state[f"delete_confirm_{store}_{i}"] = False
+                            safe_rerun()
+                        if st.button("Abbrechen", key=f"cancel_{store}_{i}"):
+                            st.session_state[f"delete_confirm_{store}_{i}"] = False
+                            safe_rerun()
 
 # =============================
 # Archiv & PDF
