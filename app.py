@@ -25,16 +25,20 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
     if not data:
         pdf.cell(200, 10, txt="Liste ist leer.", ln=True)
     else:
-        kategorien = sorted(set(item["Produktkategorie"] for item in data))
-        for kat in kategorien:
-            pdf.set_font("Helvetica", "B", 12)
-            pdf.cell(200, 10, txt=kat, ln=True)
-            pdf.set_font("Helvetica", size=11)
-            for item in [x for x in data if x["Produktkategorie"] == kat]:
-                status = "✅" if item["Erledigt"] else "⬜"
-                line = f"{status} {item['Produkt']} — {item['Menge']} ({item['Einkaufsstätte']}) von {item['Besteller']}"
-                pdf.cell(200, 8, txt=line, ln=True)
-            pdf.ln(5)
+        kategorien_order = ["🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🥨 Backwaren","🌭 Wurst",
+                            "🧀 Käse","🥛 Molkereiprodukte","🐟 Fisch",
+                            "⚙️ Sonstiges","🫘 (Trocken-)Konserven","🍫 Süßwaren","🍟 Salzgebäck","🧴 Drogerie","🧼 Wasch- und Reinigungsmittel"]
+        for kat in kategorien_order:
+            items_in_cat = [x for x in data if x["Produktkategorie"]==kat]
+            if items_in_cat:
+                pdf.set_font("Helvetica", "B", 12)
+                pdf.cell(200, 10, txt=kat, ln=True)
+                pdf.set_font("Helvetica", size=11)
+                for item in items_in_cat:
+                    status = "✅" if item["Erledigt"] else "⬜"
+                    line = f"{status} {item['Produkt']} — {item['Menge']} ({item['Einkaufsstätte']}) von {item['Besteller']}"
+                    pdf.cell(200, 8, txt=line, ln=True)
+                pdf.ln(5)
     pdf.output(filename)
     st.success(f"PDF '{filename}' wurde erstellt!")
 
@@ -68,7 +72,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-    st.title("🛒 Smartshopper")
+    st.title("🛒 Familien Einkaufsliste")
     with st.form("login_form", clear_on_submit=False):
         user = st.text_input("👤 User", key="login_user")
         pw = st.text_input("🔑 Passwort", type="password", key="login_pw")
@@ -85,7 +89,7 @@ if not st.session_state.logged_in:
 # =============================
 # Hauptseite
 # =============================
-st.title("🛒 Smartshopper")
+st.title("🛒 Familien Einkaufsliste")
 st.write(f"Angemeldet als: **{st.session_state.user}**")
 if st.button("🚪 Logout"):
     st.session_state.logged_in = False
@@ -119,6 +123,7 @@ KATEGORIEN = {
                  "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
                  "Spargel","Okra","Artischocke","Mangold","Wirsing","Rettich","Pak Choi","Chinakohl",
                  "Bohnen","Linsen","Rosenkohl","Süßkartoffel","Pilze","Shiitake","Champignon"],
+    "🥐 Frühstück": ["Kekse","Müsli","Haferflocken","Hefegebäck","Cornflakes","Zimtbrötchen"],
     "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst",
                    "Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
     "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen",
@@ -133,9 +138,9 @@ KATEGORIEN = {
                      "Toast","Ciabatta","Baguette","Kaiserbrötchen","Laugensemmel","Schwarzbrot",
                      "Dinkelbrot","Rosinenbrötchen","Focaccia","Pain de Campagne","Fladenbrot",
                      "Pita","Bagel","Muffin"],
-    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Pflaumenmus",
-                         "Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade","Erdnussbutter",
-                         "Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
+    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas",
+                         "Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade",
+                         "Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
     "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers",
                    "Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
     "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
@@ -150,7 +155,7 @@ KATEGORIEN = {
     "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
                                "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
                                "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
-                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
+                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"]
     "⚙️ Sonstiges": []
 }
 
@@ -162,7 +167,7 @@ ALL_PRODUCTS = sorted(list({p for items in KATEGORIEN.values() for p in items}))
 with st.form("add_item", clear_on_submit=True):
     produkt_input = st.text_input("Produktname (ab 3 Buchstaben)")
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
-    laden = st.selectbox("Einkaufsstätte", ["Aldi","DM","Edeka","Kaufland","Lidl","Netto","Rewe","Rossmann","Sonstiges"])
+    laden = st.selectbox("Einkaufsstätte", sorted(["Aldi","DM","Edeka","Kaufland","Lidl","Rewe","Rossmann","Sonstiges"]))
 
     # Näheste Übereinstimmung suchen
     produkt = produkt_input.strip()
@@ -199,6 +204,12 @@ if not data:
     st.info("Liste ist leer.")
 else:
     alle_markieren = st.checkbox("✅ Alle markieren")
+
+    # Sortierung nach Einkaufsstätte und Produktkategorie
+    def sort_key(item):
+        return (item["Einkaufsstätte"], item["Produktkategorie"])
+    data.sort(key=sort_key)
+
     for i, item in enumerate(data):
         cols = st.columns([3,1,1,1,1])
         bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
@@ -206,24 +217,38 @@ else:
         cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Einkaufsstätte']}</div>", unsafe_allow_html=True)
         cols[2].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
 
-        # ✅ Erledigt
+        # ✅ Toggle erledigt
         if cols[3].button("✅", key=f"done{i}"):
             if alle_markieren:
-                for it in data:
-                    it["Erledigt"] = True
+                # Bestätigungsmodal
+                with st.modal("Alle Produkte erledigen?"):
+                    if st.button("Ja, alle erledigen"):
+                        for it in data:
+                            it["Erledigt"] = not it["Erledigt"]
+                        save_data(DATA_FILE, data)
+                        safe_rerun()
             else:
-                item["Erledigt"] = True
-            save_data(DATA_FILE, data)
-            safe_rerun()
+                # Einzeln toggle
+                with st.modal(f"{item['Produkt']} erledigen?"):
+                    if st.button("Ja"):
+                        item["Erledigt"] = not item["Erledigt"]
+                        save_data(DATA_FILE, data)
+                        safe_rerun()
 
         # ❌ Löschen
         if cols[4].button("❌", key=f"del{i}"):
             if alle_markieren:
-                data = []
+                with st.modal("Alle Produkte löschen?"):
+                    if st.button("Ja, alles löschen"):
+                        data = []
+                        save_data(DATA_FILE, data)
+                        safe_rerun()
             else:
-                data.pop(i)
-            save_data(DATA_FILE, data)
-            safe_rerun()
+                with st.modal(f"{item['Produkt']} löschen?"):
+                    if st.button("Ja"):
+                        data.pop(i)
+                        save_data(DATA_FILE, data)
+                        safe_rerun()
 
 # =============================
 # Archiv & PDF
