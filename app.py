@@ -40,7 +40,7 @@ if not st.session_state.logged_in:
 # ------------------ Hauptseite ------------------
 st.title("🛒 Familien Einkaufsliste")
 st.success("Willkommen! ✅")
-st.caption("Tipp: Diese App läuft komplett lokal – keine Cloud nötig!")
+
 
 # Logout-Button
 if st.button("🚪 Logout"):
