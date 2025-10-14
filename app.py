@@ -51,19 +51,4 @@ else:
                 "Menge": menge.strip(),
                 "Symbol": symbol,
                 "Einkaufsstätte": laden,
-                "Erledigt": False
-            })
-            with open(DATA_FILE, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            st.success(f"{symbol} {produkt} wurde hinzugefügt!")
 
-    # -------- Einkaufsliste anzeigen --------
-    st.subheader("🧾 Einkaufsliste")
-
-    if not data:
-        st.info("Die Liste ist noch leer. Füge etwas hinzu!")
-    else:
-        for i, item in enumerate(data):
-            cols = st.columns([4, 2, 1])
-            erledigt = cols[0].checkbox(
-                f"{item['Symbol]()
