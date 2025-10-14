@@ -2,45 +2,25 @@ import streamlit as st
 import json
 import os
 from datetime import datetime
-from fpdf import FPDF
 
-# ==================================================
-# Streamlit-Einstellungen
-# ==================================================
-st.set_page_config(page_title="Familien Einkaufsliste", page_icon="🛒")
-
-# ==================================================
-# Hilfsfunktionen
-# ==================================================
-def safe_rerun():
-    try:
-        st.rerun()
-    except AttributeError:
-        st.experimental_rerun()
-
-
-def save_data(filename, data):
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-def load_data(filename):
-    if os.path.exists(filename):
-        with open(filename, "r", encoding="utf-8") as f:
-            try:
-                return json.load(f)
-            except Exception:
-                return []
-    return []
-
+# =============================
+# PDF optional importieren
+# =============================
+try:
+    from fpdf import FPDF
+    PDF_AVAILABLE = True
+except ModuleNotFoundError:
+    PDF_AVAILABLE = False
 
 def export_pdf(data, filename="Einkaufsliste.pdf"):
+    if not PDF_AVAILABLE:
+        st.warning("📄 PDF-Export nicht verfügbar. Installiere fpdf, wenn genügend Speicher vorhanden ist.")
+        return
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=14)
     pdf.cell(200, 10, txt="🛒 Familien Einkaufsliste", ln=True, align="C")
     pdf.ln(10)
-
     if not data:
         pdf.cell(200, 10, txt="Liste ist leer.", ln=True)
     else:
@@ -55,14 +35,34 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
                 pdf.cell(200, 8, txt=line, ln=True)
             pdf.ln(5)
     pdf.output(filename)
-    return filename
+    st.success(f"PDF '{filename}' wurde erstellt!")
 
+# =============================
+# Hilfsfunktionen
+# =============================
+def safe_rerun():
+    try:
+        st.rerun()
+    except AttributeError:
+        st.experimental_rerun()
 
-# ==================================================
+def save_data(filename, data):
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def load_data(filename):
+    if os.path.exists(filename):
+        with open(filename, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except Exception:
+                return []
+    return []
+
+# =============================
 # Passwortschutz
-# ==================================================
+# =============================
 PASSWORD = "geheim123"
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
@@ -77,48 +77,52 @@ if not st.session_state.logged_in:
             st.error("❌ Falsches Passwort!")
     st.stop()
 
-# ==================================================
+# =============================
 # Hauptseite
-# ==================================================
+# =============================
 st.title("🛒 Familien Einkaufsliste")
-
 if st.button("🚪 Logout"):
     st.session_state.logged_in = False
     safe_rerun()
 
 DATA_FILE = "einkaufsliste.json"
 ARCHIV_DIR = "archiv"
-
 os.makedirs(ARCHIV_DIR, exist_ok=True)
 
 data = load_data(DATA_FILE)
 
-# ==================================================
-# Kategorisierung mit Marken + Texterkennung
-# ==================================================
+# =============================
+# Kategorien + Produktliste (mit Marken)
+# =============================
 KATEGORIEN = {
     "🍎 Obst": [
-        "Apfel", "Banane", "Birne", "Pfirsich", "Pflaume", "Kirsche", "Traube", "Erdbeere", "Himbeere",
-        "Blaubeere", "Melone", "Wassermelone", "Mango", "Ananas", "Orange", "Mandarine", "Zitrone",
-        "Limette", "Kiwi", "Granatapfel", "Feige", "Aprikose", "Passionsfrucht", "Avocado"
+        "Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere","Blaubeere",
+        "Melone","Wassermelone","Mango","Ananas","Orange","Mandarine","Zitrone","Limette","Kiwi",
+        "Granatapfel","Feige","Aprikose","Passionsfrucht","Avocado","Cantaloupe","Papaya","Johannisbeere",
+        "Holunderbeere","Preiselbeere","Rhabarber","Clementine","Blutorange","Physalis","Nektarine",
+        "Mirabelle","Brombeere","Boysenbeere","Kumquat","Sternfrucht","Guave","Drachenfrucht","Kaki",
+        "Maracuja","Pomelo","Erdbeer-Nutella Mix"
     ],
     "🥦 Gemüse": [
-        "Tomate", "Gurke", "Paprika", "Zwiebel", "Knoblauch", "Kartoffel", "Karotte", "Brokkoli", "Blumenkohl",
-        "Zucchini", "Aubergine", "Lauch", "Sellerie", "Radieschen", "Rote Beete", "Kohl", "Spinat", "Feldsalat"
+        "Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli","Blumenkohl",
+        "Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete","Kohl","Spinat","Feldsalat",
+        "Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen","Spargel","Okra","Artischocke","Mangold",
+        "Wirsing","Rettich","Kresse","Pak Choi","Chinakohl","Bohnen","Linsen","Rosenkohl","Auberginenmark",
+        "Süßkartoffel","Algen","Pilze","Shiitake","Austernpilz","Champignon"
     ],
-    "🥩 Fleisch": ["Rindfleisch", "Hähnchen", "Schweinefleisch", "Hackfleisch", "Steak", "Wurst"],
-    "🐟 Fisch": ["Lachs", "Forelle", "Thunfisch", "Seelachs", "Garnelen", "Kabeljau"],
-    "🧀 Käse": ["Gouda", "Emmentaler", "Mozzarella", "Camembert", "Feta"],
-    "🌭 Wurst": ["Salami", "Schinken", "Mortadella", "Lyoner"],
-    "🥛 Molkereiprodukte": ["Milch", "Joghurt", "Sahne", "Quark", "Butter"],
-    "🥨 Backwaren": ["Brot", "Brötchen", "Croissant", "Brezel", "Toast"],
-    "🍓 Brotaufstrich": ["Nutella", "Honig", "Marmelade", "Erdbeermarmelade", "Konfitüre"],
-    "🍫 Süßwaren": ["Schokolade", "Milka", "Kinderriegel", "Gummibärchen", "Bonbons"],
-    "🍟 Salzgebäck": ["Chips", "Erdnussflips", "Salzstangen", "Cracker"],
-    "🧴 Drogerie": ["Zahnpasta", "Zahnbürste", "Shampoo", "Nivea", "Seife", "Duschgel"],
-    "🧻 Papierwaren": ["Toilettenpapier", "Küchenrolle", "Servietten", "Taschentücher"],
-    "🧺 Non Food": ["Waschmittel", "Spülmittel", "Waschmaschine", "Batterien", "Kerzen"],
-    "🥤 Getränke": ["Cola", "Coca-Cola", "Bier", "Wasser", "Saft", "Tee", "Kaffee", "Wein"],
+    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst"],
+    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau"],
+    "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Camembert","Feta"],
+    "🌭 Wurst": ["Salami","Schinken","Mortadella","Lyoner"],
+    "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter"],
+    "🥨 Backwaren": ["Brot","Brötchen","Croissant","Brezel","Toast"],
+    "🍓 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas"],
+    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons"],
+    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker"],
+    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel"],
+    "🧻 Papierwaren": ["Toilettenpapier","Küchenrolle","Servietten","Taschentücher"],
+    "🧺 Non Food": ["Waschmittel","Spülmittel","Waschmaschine","Batterien","Kerzen"],
+    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein"]
 }
 
 def finde_kategorie(produkt):
@@ -129,15 +133,14 @@ def finde_kategorie(produkt):
                 return kat
     return "⚙️ Sonstiges"
 
-# ==================================================
+# =============================
 # Neues Produkt hinzufügen
-# ==================================================
+# =============================
 with st.form("add_item", clear_on_submit=True):
     produkt = st.text_input("Produktname")
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
     laden = st.selectbox("Einkaufsstätte", ["Rewe", "Aldi", "Lidl", "DM", "Edeka", "Kaufland", "Sonstiges"])
     submitted = st.form_submit_button("Hinzufügen")
-
     if submitted and produkt.strip():
         kategorie = finde_kategorie(produkt)
         neues_item = {
@@ -149,42 +152,37 @@ with st.form("add_item", clear_on_submit=True):
         }
         data.append(neues_item)
         save_data(DATA_FILE, data)
-        st.success(f"{kategorie} {produkt} wurde hinzugefügt!")
+        st.success(f"{kategorie} {produkt} hinzugefügt!")
 
-# ==================================================
+# =============================
 # Einkaufsliste anzeigen
-# ==================================================
+# =============================
 st.subheader("🧾 Einkaufsliste")
-
 if not data:
-    st.info("Die Liste ist leer. Füge etwas hinzu!")
+    st.info("Liste ist leer.")
 else:
-    # Checkbox: Alles markieren
     alle_markieren = st.checkbox("✅ Alles markieren/entmarkieren")
-
     for i, item in enumerate(data):
         if alle_markieren:
             item["Erledigt"] = True
-
-        cols = st.columns([4, 2, 1])
+        cols = st.columns([4,2,1])
         erledigt = cols[0].checkbox(
             f"{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}",
             value=item["Erledigt"],
             key=f"chk{i}"
         )
         cols[1].write(item["Einkaufsstätte"])
-
         if cols[2].button("❌", key=f"del{i}"):
             st.session_state["to_delete"] = {"index": i, "produkt": item["Produkt"], "kategorie": item["Produktkategorie"]}
         item["Erledigt"] = erledigt
 
-# ==================================================
+# =============================
 # Löschbestätigung
-# ==================================================
+# =============================
 if "to_delete" in st.session_state:
     td = st.session_state["to_delete"]
     st.warning(f"Soll **{td['kategorie']} {td['produkt']}** wirklich gelöscht werden?")
-    c1, c2 = st.columns(2)
+    c1,c2 = st.columns(2)
     if c1.button("✅ Ja, löschen"):
         idx = td["index"]
         if 0 <= idx < len(data):
@@ -197,11 +195,11 @@ if "to_delete" in st.session_state:
         del st.session_state["to_delete"]
         st.info("Löschen abgebrochen.")
 
-# ==================================================
+# =============================
 # Buttons: Alles erledigen / Alles löschen / Archiv / PDF
-# ==================================================
+# =============================
 st.markdown("---")
-c1, c2, c3, c4 = st.columns(4)
+c1,c2,c3,c4 = st.columns(4)
 if c1.button("✅ Alles erledigen"):
     for item in data:
         item["Erledigt"] = True
@@ -221,7 +219,6 @@ if c3.button("💾 Einkauf speichern"):
         st.success(f"Einkaufsliste als {filename} gespeichert!")
 
 if c4.button("📄 PDF exportieren"):
-    pdfname = export_pdf(data)
-    st.success(f"PDF '{pdfname}' wurde erstellt!")
+    export_pdf(data)
 
 save_data(DATA_FILE, data)
