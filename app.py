@@ -26,9 +26,9 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
         pdf.cell(200, 10, txt="Liste ist leer.", ln=True)
     else:
         kategorien_order = [
-            "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🥨 Backwaren","🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte",
-            "🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven","🍯 Brotaufstrich","🍫 Süßwaren","🍟 Salzgebäck",
-            "🧴 Drogerie","🥤 Getränke","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
+            "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren""🥨 Backwaren","🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte",
+            "🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven","🍟 Salzgebäck","🥤 Getränke",
+            "🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
         ]
         for kat in kategorien_order:
             items_in_cat = [x for x in data if x["Produktkategorie"] == kat]
@@ -171,7 +171,6 @@ with st.form("add_item", clear_on_submit=True):
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
     laden = st.selectbox("Einkaufsstätte", sorted(["Aldi","DM","Edeka","Kaufland","Lidl","Rewe","Rossmann","Sonstiges"]))
 
-    # Nächste Übereinstimmung suchen
     produkt = produkt_input.strip()
     if len(produkt) >= 3:
         matches = difflib.get_close_matches(produkt, ALL_PRODUCTS, n=1, cutoff=0.6)
@@ -180,7 +179,6 @@ with st.form("add_item", clear_on_submit=True):
 
     submitted = st.form_submit_button("Hinzufügen")
     if submitted and produkt:
-        # Kategorie bestimmen
         kategorie = "⚙️ Sonstiges"
         for kat, items in KATEGORIEN.items():
             if produkt in items:
@@ -207,14 +205,23 @@ if not data:
 else:
     alle_markieren = st.checkbox("✅ Alle markieren")
 
+    # Checkbox pro Einkaufsstätte
+    unique_stores = sorted(list({x["Einkaufsstätte"] for x in data}))
+    store_checkbox_state = {}
+    for store in unique_stores:
+        store_checkbox_state[store] = st.checkbox(f"✅ Alles in {store} erledigen", key=f"store_{store}")
+        if store_checkbox_state[store]:
+            for item in data:
+                if item["Einkaufsstätte"] == store:
+                    item["Erledigt"] = True
+        save_data(DATA_FILE, data)
+
     kategorien_order = [
-        "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🥨 Backwaren","🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte",
-        "🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven","🍯 Brotaufstrich","🍫 Süßwaren","🍟 Salzgebäck",
-        "🧴 Drogerie","🥤 Getränke","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
+        "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren","🥨 Backwaren","🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte",
+        "🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven","🍟 Salzgebäck","🥤 Getränke",
+        "🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
     ]
-    def sort_key(item):
-        return (item["Einkaufsstätte"], kategorien_order.index(item["Produktkategorie"]))
-    data.sort(key=sort_key)
+    data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"])))
 
     for i, item in enumerate(data):
         cols = st.columns([3,1,1,1,1])
@@ -225,28 +232,27 @@ else:
 
         # ✅ Toggle erledigt
         if cols[3].button("✅", key=f"done{i}"):
-            if alle_markieren:
-                for it in data:
-                    it["Erledigt"] = not it["Erledigt"]
-            else:
-                item["Erledigt"] = not item["Erledigt"]
+            item["Erledigt"] = not item["Erledigt"]
             save_data(DATA_FILE, data)
             safe_rerun()
 
         # ❌ Löschen
-        if cols[4].button("❌", key=f"del{i}"):
-            if alle_markieren:
-                with st.modal("Alle Produkte löschen?"):
-                    if st.button("Ja, alles löschen"):
-                        data = []
-                        save_data(DATA_FILE, data)
-                        safe_rerun()
-            else:
-                with st.modal(f"{item['Produkt']} löschen?"):
-                    if st.button("Ja, löschen"):
-                        data.pop(i)
-                        save_data(DATA_FILE, data)
-                        safe_rerun()
+        delete_key = f"delete_{i}"
+        if cols[4].button("❌", key=delete_key):
+            st.session_state[f"modal_delete_{i}"] = True
+
+        if st.session_state.get(f"modal_delete_{i}", False):
+            modal = st.modal("Löschen bestätigen")
+            with modal:
+                st.write(f"Möchtest du **{item['Produkt']}** wirklich löschen?")
+                if st.button("Ja, löschen", key=f"confirm_{i}"):
+                    data.pop(i)
+                    save_data(DATA_FILE, data)
+                    st.session_state[f"modal_delete_{i}"] = False
+                    safe_rerun()
+                if st.button("Abbrechen", key=f"cancel_{i}"):
+                    st.session_state[f"modal_delete_{i}"] = False
+                    safe_rerun()
 
 # =============================
 # Archiv & PDF
@@ -264,3 +270,4 @@ if c2.button("📄 PDF exportieren"):
     export_pdf(data)
 
 save_data(DATA_FILE, data)
+
