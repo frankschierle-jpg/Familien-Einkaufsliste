@@ -29,22 +29,25 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
                             "🧀 Käse", "🥛 Molkereiprodukte", "🥩 Fleisch", "🐟 Fisch",
                             "🫘 (Trocken-)Konserven", "🍯 Brotaufstrich", "🍫 Süßwaren", "🍟 Salzgebäck",
                             "🧴 Drogerie", "🥤 Getränke", "🧼 Wasch- und Reinigungsmittel", "⚙️ Sonstiges"]
-        # Zunächst nach Einkaufsstätte sortieren
+        # Nach Einkaufsstätte und Kategorie sortieren
         data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"]) if x["Produktkategorie"] in kategorien_order else 999))
         current_shop = ""
+        current_cat = ""
         for item in data:
             if item["Einkaufsstätte"] != current_shop:
                 current_shop = item["Einkaufsstätte"]
+                pdf.ln(5)
                 pdf.set_font("Helvetica", "B", 12)
                 pdf.cell(200, 10, txt=f"Einkaufsstätte: {current_shop}", ln=True)
-            # Kategorie header
-            pdf.set_font("Helvetica", "B", 12)
-            pdf.cell(200, 10, txt=item["Produktkategorie"], ln=True)
+                current_cat = ""
+            if item["Produktkategorie"] != current_cat:
+                current_cat = item["Produktkategorie"]
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.cell(200, 8, txt=current_cat, ln=True)
             pdf.set_font("Helvetica", size=11)
             status = "✅" if item["Erledigt"] else "⬜"
             line = f"{status} {item['Produkt']} — {item['Menge']} von {item['Besteller']}"
-            pdf.cell(200, 8, txt=line, ln=True)
-            pdf.ln(2)
+            pdf.cell(200, 7, txt=line, ln=True)
     pdf.output(filename)
     st.success(f"PDF '{filename}' wurde erstellt!")
 
@@ -200,18 +203,25 @@ else:
                         "🫘 (Trocken-)Konserven", "🍯 Brotaufstrich", "🍫 Süßwaren", "🍟 Salzgebäck",
                         "🧴 Drogerie", "🥤 Getränke", "🧼 Wasch- und Reinigungsmittel", "⚙️ Sonstiges"]
 
-    # Sortieren nach Einkaufsstätte und Kategorienreihenfolge
+    # Nach Einkaufsstätte und Kategorie sortieren
     data.sort(key=lambda x: (x["Einkaufsstätte"], kategorien_order.index(x["Produktkategorie"]) if x["Produktkategorie"] in kategorien_order else 999))
 
+    current_shop = ""
+    current_cat = ""
     for i, item in enumerate(data):
+        if item["Einkaufsstätte"] != current_shop:
+            current_shop = item["Einkaufsstätte"]
+            st.markdown(f"### Einkaufsstätte: {current_shop}")
+            current_cat = ""
+        if item["Produktkategorie"] != current_cat:
+            current_cat = item["Produktkategorie"]
+            st.markdown(f"**{current_cat}**")
         cols = st.columns([3,1,1,1,1])
         bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
-        cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
-        cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Einkaufsstätte']}</div>", unsafe_allow_html=True)
-        cols[2].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
-
+        cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
+        cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
         # ✅ Toggle erledigt
-        if cols[3].button("✅", key=f"done{i}"):
+        if cols[2].button("✅", key=f"done{i}"):
             if alle_markieren:
                 for it in data:
                     it["Erledigt"] = not it["Erledigt"]
@@ -219,9 +229,8 @@ else:
                 item["Erledigt"] = not item["Erledigt"]
             save_data(DATA_FILE, data)
             safe_rerun()
-
         # ❌ Löschen
-        if cols[4].button("❌", key=f"del{i}"):
+        if cols[3].button("❌", key=f"del{i}"):
             if alle_markieren:
                 data.clear()
             else:
@@ -236,4 +245,7 @@ st.markdown("---")
 c1,c2 = st.columns(2)
 if c1.button("💾 Einkauf speichern"):
     if data:
-        datum = datetime.now().strftime("%Y-%m-%d_%H-%
+        datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
+        save_data(filename, data)
+        st
