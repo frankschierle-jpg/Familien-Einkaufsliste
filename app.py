@@ -94,69 +94,96 @@ data = load_data(DATA_FILE)
 # Alte Daten kompatibel machen
 for item in data:
     if "Produktkategorie" not in item:
-        if "Symbol" in item:
-            item["Produktkategorie"] = item["Symbol"]
-        else:
-            item["Produktkategorie"] = "⚙️ Sonstiges"
+        item["Produktkategorie"] = "⚙️ Sonstiges"
 
 # =============================
-# Kategorien + Produktliste (inkl. Marken)
+# Kategorien + Produkte
 # =============================
 KATEGORIEN = {
-    "🍎 Obst": ["Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere",
-                "Blaubeere","Melone","Wassermelone","Mango","Ananas","Orange","Mandarine",
-                "Zitrone","Limette","Kiwi","Granatapfel","Feige","Aprikose","Passionsfrucht",
-                "Avocado","Cantaloupe","Papaya","Johannisbeere","Holunderbeere","Preiselbeere",
-                "Rhabarber","Clementine","Blutorange","Physalis","Nektarine","Brombeere",
-                "Boysenbeere","Kumquat","Sternfrucht","Guave","Drachenfrucht","Kaki","Maracuja",
-                "Pomelo","Erdbeer-Nutella Mix"],
+    "🍎 Obst": ["Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere","Blaubeere",
+                "Melone","Wassermelone","Mango","Ananas","Orange","Mandarine","Zitrone","Limette",
+                "Kiwi","Granatapfel","Feige","Aprikose","Passionsfrucht","Avocado","Cantaloupe",
+                "Papaya","Johannisbeere","Holunderbeere","Preiselbeere","Rhabarber","Clementine",
+                "Blutorange","Physalis","Nektarine","Brombeere","Boysenbeere","Kumquat","Sternfrucht",
+                "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Erdbeer-Nutella Mix","Pflaume",
+                "Mandarinen","Heidelbeere","Stachelbeere","Traube rot","Traube grün","Kaki","Litschi",
+                "Granatapfelkern"],
     "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli",
-                "Blumenkohl","Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete",
-                "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
-                "Spargel","Okra","Artischocke","Mangold","Wirsing","Rettich","Pak Choi","Chinakohl",
-                "Bohnen","Linsen","Rosenkohl","Süßkartoffel","Pilze","Shiitake","Champignon"],
-    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst"],
-    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau"],
-    "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Camembert","Feta"],
-    "🌭 Wurst": ["Salami","Schinken","Mortadella","Lyoner"],
-    "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter"],
-    "🥨 Backwaren": ["Brot","Brötchen","Croissant","Brezel","Toast"],
-    "🍓 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas"],
-    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons"],
-    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker"],
-    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel"],
-    "🧻 Papierwaren": ["Toilettenpapier","Küchenrolle","Servietten","Taschentücher"],
-    "🧺 Non Food": ["Waschmittel","Spülmittel","Waschmaschine","Batterien","Kerzen"],
-    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein"]
+                 "Blumenkohl","Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete",
+                 "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
+                 "Spargel","Okra","Artischocke","Mangold","Wirsing","Rettich","Pak Choi","Chinakohl",
+                 "Bohnen","Linsen","Rosenkohl","Süßkartoffel","Pilze","Shiitake","Champignon"],
+    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst",
+                   "Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
+    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen",
+                 "Makrele","Heilbutt","Hering","Scholle","Rotbarsch"],
+    "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Camembert","Feta","Parmesan","Edamer",
+                "Tilsiter","Bergkäse","Frischkäse","Ziegenkäse"],
+    "🌭 Wurst": ["Salami","Schinken","Mortadella","Lyoner","Bratwurst","Weißwurst","Leberwurst",
+                "Cervelat","Bauernwurst","Mettwurst"],
+    "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter","Schmand","Kefir","Buttermilch",
+                            "Lassi","Molke","Frischmilch","Schlagsahne"],
+    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel",
+                     "Toast","Ciabatta","Baguette","Kaiserbrötchen","Laugensemmel","Schwarzbrot",
+                     "Dinkelbrot","Rosinenbrötchen","Focaccia","Pain de Campagne","Fladenbrot",
+                     "Pita","Bagel","Muffin"],
+    "🍓 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas",
+                         "Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade",
+                         "Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
+    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers",
+                   "Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
+    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
+                     "Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
+    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel",
+                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
+    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo",
+                   "Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
+    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
+                                       "Allzweckreiniger","Spülmittelflasche","Bodenreiniger",
+                                       "WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
+    "🥫 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
+                               "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
+                               "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
+                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"]
 }
 
-def finde_kategorie(produkt):
-    if len(produkt.strip()) < 3:
-        return "⚙️ Sonstiges"
-    p = produkt.lower()
-    for kat, items in KATEGORIEN.items():
-        for i in items:
-            if i.lower() in p:
-                return kat
-    return "⚙️ Sonstiges"
+# =============================
+# Autocomplete-Funktion ab 3 Buchstaben
+# =============================
+def autocomplete_vorschlaege(text):
+    text = text.lower()
+    vorschlaege = []
+    if len(text) >= 3:
+        for kat_items in KATEGORIEN.values():
+            for prod in kat_items:
+                if text in prod.lower():
+                    vorschlaege.append(prod)
+    return list(set(vorschlaege))[:10]  # max 10 Vorschläge
 
 # =============================
-# Neues Produkt hinzufügen
+# Neues Produkt hinzufügen mit Autocomplete
 # =============================
 with st.form("add_item", clear_on_submit=True):
-    produkt = st.text_input("Produktname")
+    produkt_input = st.text_input("Produktname")
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
     laden = st.selectbox("Einkaufsstätte", ["Rewe", "Aldi", "Lidl", "DM", "Edeka", "Kaufland", "Sonstiges"])
+
+    # Vorschläge anzeigen
+    if produkt_input.strip() and len(produkt_input.strip()) >= 3:
+        vorschlaege = autocomplete_vorschlaege(produkt_input)
+        if vorschlaege:
+            st.info("Vorschläge: " + ", ".join(vorschlaege))
+
     submitted = st.form_submit_button("Hinzufügen")
-
-    if produkt.strip():
-        erkannte_kategorie = finde_kategorie(produkt)
-        st.info(f"Automatisch erkannte Kategorie: {erkannte_kategorie}")
-
-    if submitted and produkt.strip():
-        kategorie = finde_kategorie(produkt)
+    if submitted and produkt_input.strip():
+        # Kategorie finden
+        kategorie = "⚙️ Sonstiges"
+        for kat, items in KATEGORIEN.items():
+            if any(produkt_input.lower() in p.lower() for p in items):
+                kategorie = kat
+                break
         neues_item = {
-            "Produkt": produkt.strip(),
+            "Produkt": produkt_input.strip(),
             "Menge": menge.strip(),
             "Produktkategorie": kategorie,
             "Einkaufsstätte": laden,
@@ -164,7 +191,7 @@ with st.form("add_item", clear_on_submit=True):
         }
         data.append(neues_item)
         save_data(DATA_FILE, data)
-        st.success(f"{kategorie} {produkt} hinzugefügt!")
+        st.success(f"{kategorie} {produkt_input} hinzugefügt!")
 
 # =============================
 # Einkaufsliste anzeigen
