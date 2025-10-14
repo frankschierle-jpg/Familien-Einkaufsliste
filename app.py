@@ -105,9 +105,8 @@ KATEGORIEN = {
                 "Kiwi","Granatapfel","Feige","Aprikose","Passionsfrucht","Avocado","Cantaloupe",
                 "Papaya","Johannisbeere","Holunderbeere","Preiselbeere","Rhabarber","Clementine",
                 "Blutorange","Physalis","Nektarine","Brombeere","Boysenbeere","Kumquat","Sternfrucht",
-                "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Pflaume",
-                "Mandarinen","Heidelbeere","Stachelbeere","Traube rot","Traube grün","Kaki","Litschi",
-                "Granatapfelkern"],
+                "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Pflaume","Mandarinen","Heidelbeere",
+                "Stachelbeere","Traube rot","Traube grün","Kaki","Litschi","Granatapfelkern"],
     "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli",
                  "Blumenkohl","Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete",
                  "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
@@ -127,9 +126,9 @@ KATEGORIEN = {
                      "Toast","Ciabatta","Baguette","Kaiserbrötchen","Laugensemmel","Schwarzbrot",
                      "Dinkelbrot","Rosinenbrötchen","Focaccia","Pain de Campagne","Fladenbrot",
                      "Pita","Bagel","Muffin"],
-    "🍓 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas",
-                         "Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade",
-                         "Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
+    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Pflaumenmus",
+                         "Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade","Erdnussbutter",
+                         "Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
     "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers",
                    "Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
     "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
@@ -141,123 +140,50 @@ KATEGORIEN = {
     "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
                                        "Allzweckreiniger","Spülmittelflasche","Bodenreiniger",
                                        "WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
-    "🥫 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
+    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
                                "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
                                "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
                                "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"]
 }
 
 # =============================
-# Autocomplete-Funktion ab 3 Buchstaben
+# Produktliste flach für Dropdown
 # =============================
-def autocomplete_vorschlaege(text):
-    text = text.lower()
-    vorschlaege = []
-    if len(text) >= 3:
-        for kat_items in KATEGORIEN.values():
-            for prod in kat_items:
-                if text in prod.lower():
-                    vorschlaege.append(prod)
-    return list(set(vorschlaege))[:10]  # max 10 Vorschläge
+ALL_PRODUCTS = []
+for items in KATEGORIEN.values():
+    ALL_PRODUCTS.extend(items)
+ALL_PRODUCTS = sorted(list(set(ALL_PRODUCTS)))  # doppelte entfernen
 
 # =============================
-# Neues Produkt hinzufügen mit Autocomplete
+# Neues Produkt hinzufügen mit Dropdown
 # =============================
 with st.form("add_item", clear_on_submit=True):
-    produkt_input = st.text_input("Produktname")
+    input_text = st.text_input("Produktname (ab 3 Buchstaben)")
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
-    laden = st.selectbox("Einkaufsstätte", ["Rewe", "Aldi", "Lidl", "DM", "Edeka", "Kaufland", "Sonstiges"])
+    laden = st.selectbox("Einkaufsstätte", ["Rewe","Aldi","Lidl","DM","Edeka","Kaufland","Sonstiges"])
 
-    # Vorschläge anzeigen
-    if produkt_input.strip() and len(produkt_input.strip()) >= 3:
-        vorschlaege = autocomplete_vorschlaege(produkt_input)
-        if vorschlaege:
-            st.info("Vorschläge: " + ", ".join(vorschlaege))
+    # Dropdown mit Filter
+    auswahl = []
+    if len(input_text.strip()) >= 3:
+        auswahl = [p for p in ALL_PRODUCTS if input_text.lower() in p.lower()]
+    produkt = st.selectbox("Produkt auswählen", options=auswahl) if auswahl else input_text.strip()
 
     submitted = st.form_submit_button("Hinzufügen")
-    if submitted and produkt_input.strip():
-        # Kategorie finden
+    if submitted and produkt:
+        # Kategorie bestimmen
         kategorie = "⚙️ Sonstiges"
         for kat, items in KATEGORIEN.items():
-            if any(produkt_input.lower() in p.lower() for p in items):
+            if produkt in items:
                 kategorie = kat
                 break
         neues_item = {
-            "Produkt": produkt_input.strip(),
-            "Menge": menge.strip(),
+            "Produkt": produkt,
+            "Menge": menge,
             "Produktkategorie": kategorie,
             "Einkaufsstätte": laden,
             "Erledigt": False
         }
         data.append(neues_item)
         save_data(DATA_FILE, data)
-        st.success(f"{kategorie} {produkt_input} hinzugefügt!")
+        st.success(f"{kategorie} {produkt} hinzugefügt!")
 
-# =============================
-# Einkaufsliste anzeigen
-# =============================
-st.subheader("🧾 Einkaufsliste")
-if not data:
-    st.info("Liste ist leer.")
-else:
-    alle_markieren = st.checkbox("✅ Alles markieren/entmarkieren")
-    for i, item in enumerate(data):
-        if alle_markieren:
-            item["Erledigt"] = True
-        cols = st.columns([4,2,1])
-        erledigt = cols[0].checkbox(
-            f"{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}",
-            value=item["Erledigt"],
-            key=f"chk{i}"
-        )
-        cols[1].write(item["Einkaufsstätte"])
-        if cols[2].button("❌", key=f"del{i}"):
-            st.session_state["to_delete"] = {"index": i, "produkt": item["Produkt"], "kategorie": item["Produktkategorie"]}
-        item["Erledigt"] = erledigt
-
-# =============================
-# Löschbestätigung
-# =============================
-if "to_delete" in st.session_state:
-    td = st.session_state["to_delete"]
-    st.warning(f"Soll **{td['kategorie']} {td['produkt']}** wirklich gelöscht werden?")
-    c1,c2 = st.columns(2)
-    if c1.button("✅ Ja, löschen"):
-        idx = td["index"]
-        if 0 <= idx < len(data):
-            data.pop(idx)
-        save_data(DATA_FILE, data)
-        del st.session_state["to_delete"]
-        st.success("Artikel gelöscht ✅")
-        safe_rerun()
-    if c2.button("❌ Abbrechen"):
-        del st.session_state["to_delete"]
-        st.info("Löschen abgebrochen.")
-
-# =============================
-# Buttons: Alles erledigen / Alles löschen / Archiv / PDF
-# =============================
-st.markdown("---")
-c1,c2,c3,c4 = st.columns(4)
-if c1.button("✅ Alles erledigen"):
-    for item in data:
-        item["Erledigt"] = True
-    save_data(DATA_FILE, data)
-    safe_rerun()
-
-if c2.button("🗑️ Alles löschen"):
-    data = []
-    save_data(DATA_FILE, data)
-    safe_rerun()
-
-if c3.button("💾 Einkauf speichern"):
-    if data:
-        datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
-        save_data(filename, data)
-        st.success(f"Einkaufsliste als {filename} gespeichert!")
-
-if c4.button("📄 PDF exportieren"):
-    export_pdf(data)
-
-save_data(DATA_FILE, data)
