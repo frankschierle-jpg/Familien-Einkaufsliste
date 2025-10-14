@@ -155,7 +155,7 @@ KATEGORIEN = {
     "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
                                "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
                                "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
-                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"]
+                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
     "⚙️ Sonstiges": []
 }
 
