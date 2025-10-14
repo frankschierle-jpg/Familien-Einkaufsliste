@@ -14,7 +14,7 @@ except ModuleNotFoundError:
 
 def export_pdf(data, filename="Einkaufsliste.pdf"):
     if not PDF_AVAILABLE:
-        st.warning("📄 PDF-Export nicht verfügbar. Installiere fpdf, wenn genügend Speicher vorhanden ist.")
+        st.warning("📄 PDF-Export nicht verfügbar. Installiere fpdf.")
         return
     pdf = FPDF()
     pdf.add_page()
@@ -31,7 +31,7 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
             pdf.set_font("Helvetica", size=11)
             for item in [x for x in data if x["Produktkategorie"] == kat]:
                 status = "✅" if item["Erledigt"] else "⬜"
-                line = f"{status} {item['Produkt']} — {item['Menge']} ({item['Einkaufsstätte']})"
+                line = f"{status} {item['Produkt']} — {item['Menge']} ({item['Einkaufsstätte']}) von {item['Besteller']}"
                 pdf.cell(200, 8, txt=line, ln=True)
             pdf.ln(5)
     pdf.output(filename)
@@ -60,7 +60,7 @@ def load_data(filename):
     return []
 
 # =============================
-# Passwortschutz
+# Passwort + User Login
 # =============================
 PASSWORD = "geheim123"
 if "logged_in" not in st.session_state:
@@ -68,19 +68,22 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     st.title("🛒 Familien Einkaufsliste")
-    pw = st.text_input("🔑 Passwort eingeben", type="password")
-    if pw == PASSWORD or st.button("Login"):
-        if pw == PASSWORD:
+    user = st.text_input("👤 User")
+    pw = st.text_input("🔑 Passwort", type="password")
+    if st.button("Login"):
+        if pw == PASSWORD and user.strip():
             st.session_state.logged_in = True
+            st.session_state.user = user.strip()
             safe_rerun()
         else:
-            st.error("❌ Falsches Passwort!")
+            st.error("❌ Falsches Passwort oder kein Benutzername angegeben")
     st.stop()
 
 # =============================
 # Hauptseite
 # =============================
 st.title("🛒 Familien Einkaufsliste")
+st.write(f"Angemeldet als: **{st.session_state.user}**")
 if st.button("🚪 Logout"):
     st.session_state.logged_in = False
     safe_rerun()
@@ -88,13 +91,14 @@ if st.button("🚪 Logout"):
 DATA_FILE = "einkaufsliste.json"
 ARCHIV_DIR = "archiv"
 os.makedirs(ARCHIV_DIR, exist_ok=True)
-
 data = load_data(DATA_FILE)
 
 # Alte Daten kompatibel machen
 for item in data:
     if "Produktkategorie" not in item:
         item["Produktkategorie"] = "⚙️ Sonstiges"
+    if "Besteller" not in item:
+        item["Besteller"] = "Unbekannt"
 
 # =============================
 # Kategorien + Produkte
@@ -106,7 +110,7 @@ KATEGORIEN = {
                 "Papaya","Johannisbeere","Holunderbeere","Preiselbeere","Rhabarber","Clementine",
                 "Blutorange","Physalis","Nektarine","Brombeere","Boysenbeere","Kumquat","Sternfrucht",
                 "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Pflaume","Mandarinen","Heidelbeere",
-                "Stachelbeere","Traube rot","Traube grün","Kaki","Litschi","Granatapfelkern"],
+                "Stachelbeere","Traube rot","Traube grün","Litschi","Granatapfelkern"],
     "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli",
                  "Blumenkohl","Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete",
                  "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
@@ -134,7 +138,7 @@ KATEGORIEN = {
     "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
                      "Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
     "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel",
-                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion","Preservativos"],
+                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
     "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo",
                    "Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
     "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
@@ -143,7 +147,8 @@ KATEGORIEN = {
     "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
                                "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
                                "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
-                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"]
+                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
+    "⚙️ Sonstiges": []
 }
 
 # =============================
@@ -163,7 +168,7 @@ with st.form("add_item", clear_on_submit=True):
     if len(produkt) >= 3:
         matches = [p for p in ALL_PRODUCTS if produkt.lower() in p.lower()]
         if matches:
-            produkt = st.selectbox("Vorschläge:", options=matches, index=0)
+            produkt = st.selectbox("Produkt auswählen", options=matches, index=0)
 
     submitted = st.form_submit_button("Hinzufügen")
     if submitted and produkt:
@@ -177,82 +182,63 @@ with st.form("add_item", clear_on_submit=True):
             "Menge": menge,
             "Produktkategorie": kategorie,
             "Einkaufsstätte": laden,
-            "Erledigt": False
+            "Erledigt": False,
+            "Besteller": st.session_state.user
         }
         data.append(neues_item)
         save_data(DATA_FILE, data)
         st.success(f"{kategorie} {produkt} hinzugefügt!")
 
 # =============================
-# Einkaufsliste anzeigen mit toggle-fähiger "Alles markieren"
+# Einkaufsliste anzeigen
 # =============================
 st.subheader("🧾 Einkaufsliste")
 if not data:
     st.info("Liste ist leer.")
 else:
-    alle_erledigt = all(item["Erledigt"] for item in data)
-    alles_markieren = st.checkbox("✅ Alles markieren", value=alle_erledigt)
-
-    if alles_markieren != alle_erledigt:
-        for item in data:
-            item["Erledigt"] = alles_markieren
-        save_data(DATA_FILE, data)
-        safe_rerun()
+    alle_markieren = st.checkbox("✅ Alle markieren")
 
     for i, item in enumerate(data):
-        cols = st.columns([4,2,1,1])
-        cols[0].write(f"{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}")
-        cols[1].write(item["Einkaufsstätte"])
-        if cols[2].button("✅", key=f"done{i}"):
-            item["Erledigt"] = True
+        cols = st.columns([3,1,1,1,1])
+        bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
+        cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
+        cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Einkaufsstätte']}</div>", unsafe_allow_html=True)
+        cols[2].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
+
+        # Grüner Haken: erledigt
+        if cols[3].button("✅", key=f"done{i}"):
+            if alle_markieren:
+                if st.confirm("Willst du wirklich alle Produkte als erledigt markieren?"):
+                    for it in data:
+                        it["Erledigt"] = True
+            else:
+                item["Erledigt"] = True
             save_data(DATA_FILE, data)
             safe_rerun()
-        if cols[3].button("❌", key=f"del{i}"):
-            st.session_state["to_delete"] = {"index": i, "produkt": item["Produkt"], "kategorie": item["Produktkategorie"]}
+
+        # Rotes X: löschen
+        if cols[4].button("❌", key=f"del{i}"):
+            if alle_markieren:
+                if st.confirm("Willst du wirklich alle Produkte löschen?"):
+                    data = []
+            else:
+                data.pop(i)
+            save_data(DATA_FILE, data)
+            safe_rerun()
 
 # =============================
-# Löschbestätigung
-# =============================
-if "to_delete" in st.session_state:
-    td = st.session_state["to_delete"]
-    st.warning(f"Soll **{td['kategorie']} {td['produkt']}** wirklich gelöscht werden?")
-    c1,c2 = st.columns(2)
-    if c1.button("✅ Ja, löschen"):
-        idx = td["index"]
-        if 0 <= idx < len(data):
-            data.pop(idx)
-        save_data(DATA_FILE, data)
-        del st.session_state["to_delete"]
-        st.success("Artikel gelöscht ✅")
-        safe_rerun()
-    if c2.button("❌ Abbrechen"):
-        del st.session_state["to_delete"]
-        st.info("Löschen abgebrochen.")
-
-# =============================
-# Buttons unten
+# Archiv & PDF
 # =============================
 st.markdown("---")
-c1,c2,c3,c4 = st.columns(4)
-if c1.button("✅ Erledigt"):
-    for item in data:
-        item["Erledigt"] = True
-    save_data(DATA_FILE, data)
-    safe_rerun()
-
-if c2.button("🗑️ Löschen"):
-    data = []
-    save_data(DATA_FILE, data)
-    safe_rerun()
-
-if c3.button("💾 Einkauf speichern"):
+c1,c2 = st.columns(2)
+if c1.button("💾 Einkauf speichern"):
     if data:
         datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
         filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
         save_data(filename, data)
         st.success(f"Einkaufsliste als {filename} gespeichert!")
 
-if c4.button("📄 PDF exportieren"):
+if c2.button("📄 PDF exportieren"):
     export_pdf(data)
 
 save_data(DATA_FILE, data)
