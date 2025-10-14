@@ -187,3 +187,71 @@ with st.form("add_item", clear_on_submit=True):
         save_data(DATA_FILE, data)
         st.success(f"{kategorie} {produkt} hinzugefügt!")
 
+# =============================
+# Einkaufsliste anzeigen
+# =============================
+st.subheader("🧾 Einkaufsliste")
+if not data:
+    st.info("Liste ist leer.")
+else:
+    alle_markieren = st.checkbox("✅ Alles markieren/entmarkieren")
+    for i, item in enumerate(data):
+        if alle_markieren:
+            item["Erledigt"] = True
+        cols = st.columns([4,2,1])
+        erledigt = cols[0].checkbox(
+            f"{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}",
+            value=item["Erledigt"],
+            key=f"chk{i}"
+        )
+        cols[1].write(item["Einkaufsstätte"])
+        if cols[2].button("❌", key=f"del{i}"):
+            st.session_state["to_delete"] = {"index": i, "produkt": item["Produkt"], "kategorie": item["Produktkategorie"]}
+        item["Erledigt"] = erledigt
+
+# =============================
+# Löschbestätigung
+# =============================
+if "to_delete" in st.session_state:
+    td = st.session_state["to_delete"]
+    st.warning(f"Soll **{td['kategorie']} {td['produkt']}** wirklich gelöscht werden?")
+    c1,c2 = st.columns(2)
+    if c1.button("✅ Ja, löschen"):
+        idx = td["index"]
+        if 0 <= idx < len(data):
+            data.pop(idx)
+        save_data(DATA_FILE, data)
+        del st.session_state["to_delete"]
+        st.success("Artikel gelöscht ✅")
+        safe_rerun()
+    if c2.button("❌ Abbrechen"):
+        del st.session_state["to_delete"]
+        st.info("Löschen abgebrochen.")
+
+# =============================
+# Buttons: Alles erledigen / Alles löschen / Archiv / PDF
+# =============================
+st.markdown("---")
+c1,c2,c3,c4 = st.columns(4)
+if c1.button("✅ Alles erledigen"):
+    for item in data:
+        item["Erledigt"] = True
+    save_data(DATA_FILE, data)
+    safe_rerun()
+
+if c2.button("🗑️ Alles löschen"):
+    data = []
+    save_data(DATA_FILE, data)
+    safe_rerun()
+
+if c3.button("💾 Einkauf speichern"):
+    if data:
+        datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
+        save_data(filename, data)
+        st.success(f"Einkaufsliste als {filename} gespeichert!")
+
+if c4.button("📄 PDF exportieren"):
+    export_pdf(data)
+
+save_data(DATA_FILE, data)
