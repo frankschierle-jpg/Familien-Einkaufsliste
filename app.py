@@ -14,6 +14,7 @@ except ModuleNotFoundError:
     PDF_AVAILABLE = False
 
 def export_pdf(data, filename="Einkaufsliste.pdf"):
+    """PDF Export der Einkaufsliste"""
     if not PDF_AVAILABLE:
         st.warning("📄 PDF-Export nicht verfügbar. Installiere fpdf.")
         return
@@ -27,8 +28,9 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
     else:
         kategorien_order = [
             "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren","🥨 Backwaren",
-            "🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte","🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven",
-            "🍟 Salzgebäck","🥤 Getränke","🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
+            "🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte","🥩 Fleisch","🐟 Fisch",
+            "🫘 (Trocken-)Konserven","🍟 Salzgebäck","🥤 Getränke",
+            "🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
         ]
         for kat in kategorien_order:
             items_in_cat = [x for x in data if x["Produktkategorie"] == kat]
@@ -42,12 +44,13 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
                     pdf.cell(200, 8, txt=line, ln=True)
                 pdf.ln(5)
     pdf.output(filename)
-    st.success(f"PDF '{filename}' wurde erstellt!")
+    st.success(f"📄 PDF '{filename}' wurde erstellt!")
 
 # =============================
 # Hilfsfunktionen
 # =============================
 def safe_rerun():
+    """Sicheres Rerun der Streamlit-App"""
     try:
         st.rerun()
     except AttributeError:
@@ -67,7 +70,7 @@ def load_data(filename):
     return []
 
 # =============================
-# Passwort + User Login
+# Login
 # =============================
 PASSWORD = "geheim123"
 if "logged_in" not in st.session_state:
@@ -76,8 +79,8 @@ if "logged_in" not in st.session_state:
 if not st.session_state.logged_in:
     st.title("🛒 Schierles Smart Shopper")
     with st.form("login_form", clear_on_submit=False):
-        user_input = st.text_input("👤 User", key="login_user")
-        pw = st.text_input("🔑 Passwort", type="password", key="login_pw")
+        user_input = st.text_input("👤 Benutzername")
+        pw = st.text_input("🔑 Passwort", type="password")
         submitted = st.form_submit_button("Login")
         if submitted:
             if pw == PASSWORD and user_input.strip():
@@ -85,14 +88,14 @@ if not st.session_state.logged_in:
                 st.session_state.user = user_input.strip()
                 safe_rerun()
             else:
-                st.error("❌ Falsches Passwort oder kein Benutzername angegeben")
+                st.error("❌ Falsches Passwort oder Benutzername fehlt")
     st.stop()
 
 # =============================
 # Hauptseite
 # =============================
 st.title("🛒 Schierles Smart Shopper")
-st.write(f"Angemeldet als: **{st.session_state.user}**")
+st.write(f"👤 Angemeldet als: **{st.session_state.user}**")
 if st.button("🚪 Logout"):
     st.session_state.logged_in = False
     safe_rerun()
@@ -104,86 +107,54 @@ data = load_data(DATA_FILE)
 
 # Alte Daten kompatibel machen
 for item in data:
-    if "Produktkategorie" not in item:
-        item["Produktkategorie"] = "⚙️ Sonstiges"
-    if "Besteller" not in item:
-        item["Besteller"] = "Unbekannt"
+    item.setdefault("Produktkategorie", "⚙️ Sonstiges")
+    item.setdefault("Besteller", "Unbekannt")
+    item.setdefault("Erledigt", False)
 
 # =============================
 # Kategorien + Produkte
 # =============================
 KATEGORIEN = {
-    "🍎 Obst": ["Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere","Blaubeere",
-                "Melone","Wassermelone","Mango","Ananas","Orange","Mandarine","Zitrone","Limette",
-                "Kiwi","Granatapfel","Feige","Aprikose","Passionsfrucht","Avocado","Cantaloupe",
-                "Papaya","Johannisbeere","Holunderbeere","Preiselbeere","Rhabarber","Clementine",
-                "Blutorange","Physalis","Nektarine","Brombeere","Boysenbeere","Kumquat","Sternfrucht",
-                "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Pflaume","Mandarinen","Heidelbeere",
-                "Stachelbeere","Traube rot","Traube grün","Litschi","Granatapfelkern"],
-    "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli",
-                 "Blumenkohl","Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete",
-                 "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
-                 "Spargel","Okra","Artischocke","Mangold","Wirsing","Rettich","Pak Choi","Chinakohl",
-                 "Bohnen","Linsen","Rosenkohl","Süßkartoffel","Pilze","Shiitake","Champignon"],
-    "🥐 Frühstück": ["Kekse","Müsli","Haferflocken","Hefegebäck","Cornflakes","Zimtbrötchen"],
-    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel",
-                     "Toast","Ciabatta","Baguette","Kaiserbrötchen","Laugensemmel","Schwarzbrot",
-                     "Dinkelbrot","Rosinenbrötchen","Focaccia","Pain de Campagne","Fladenbrot",
-                     "Pita","Bagel","Muffin"],
-    "🌭 Wurst": ["Salami","Schinken","Mortadella","Lyoner","Bratwurst","Weißwurst","Leberwurst",
-                "Cervelat","Bauernwurst","Mettwurst"],
-    "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Camembert","Feta","Parmesan","Edamer",
-                "Tilsiter","Bergkäse","Frischkäse","Ziegenkäse"],
-    "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter","Schmand","Kefir","Buttermilch",
-                            "Lassi","Molke","Frischmilch","Schlagsahne"],
-    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst",
-                   "Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
-    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen",
-                 "Makrele","Heilbutt","Hering","Scholle","Rotbarsch"],
-    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
-                               "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
-                               "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
-                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
-    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Marmeladenglas",
-                         "Pflaumenmus","Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade",
-                         "Erdnussbutter","Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
-    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers",
-                   "Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
-    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
-                     "Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
-    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel",
-                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
-    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo",
-                   "Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
-    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
-                                       "Allzweckreiniger","Spülmittelflasche","Bodenreiniger",
-                                       "WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
+    "🍎 Obst": ["Apfel", "Banane", "Birne", "Pfirsich", "Traube", "Erdbeere", "Himbeere"],
+    "🥦 Gemüse": ["Tomate", "Gurke", "Paprika", "Zwiebel", "Kartoffel", "Karotte", "Brokkoli"],
+    "🥐 Frühstück": ["Müsli", "Haferflocken", "Cornflakes"],
+    "🥨 Backwaren": ["Brot", "Brötchen", "Baguette", "Toast", "Croissant"],
+    "🌭 Wurst": ["Salami", "Schinken", "Lyoner"],
+    "🧀 Käse": ["Gouda", "Mozzarella", "Feta"],
+    "🥛 Molkereiprodukte": ["Milch", "Joghurt", "Butter"],
+    "🥩 Fleisch": ["Rindfleisch", "Hähnchen", "Schweinefleisch"],
+    "🐟 Fisch": ["Lachs", "Thunfisch"],
+    "🫘 (Trocken-)Konserven": ["Reis", "Linsen", "Bohnen", "Spaghetti"],
+    "🍯 Brotaufstrich": ["Honig", "Marmelade", "Nutella"],
+    "🍫 Süßwaren": ["Schokolade", "Gummibärchen", "Riegel"],
+    "🍟 Salzgebäck": ["Chips", "Salzstangen"],
+    "🥤 Getränke": ["Wasser", "Bier", "Cola"],
+    "🧴 Drogerie": ["Zahnpasta", "Shampoo", "Seife"],
+    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver", "Glasreiniger"],
     "⚙️ Sonstiges": []
 }
 
-ALL_PRODUCTS = sorted(list({p for items in KATEGORIEN.values() for p in items}))
+# Produktsuche case-insensitiv
+ALL_PRODUCTS = sorted({p.lower(): p for items in KATEGORIEN.values() for p in items}.values())
 
 # =============================
 # Neues Produkt hinzufügen
 # =============================
 with st.form("add_item", clear_on_submit=True):
-    produkt_input = st.text_input("Produktname (ab 3 Buchstaben)")
+    produkt_input = st.text_input("Produktname (ab 3 Buchstaben)").strip()
     menge = st.text_input("Menge (z. B. 1 Stück, 500 g)", "1")
-    laden = st.selectbox("Einkaufsstätte", sorted(["Aldi","DM","Edeka","Kaufland","Lidl","Rewe","Rossmann","Sonstiges"]))
+    laden = st.selectbox("Einkaufsstätte", sorted(["Aldi", "DM", "Edeka", "Kaufland", "Lidl", "Rewe", "Rossmann", "Sonstiges"]))
 
-    produkt = produkt_input.strip()
+    produkt = produkt_input.capitalize()
     if len(produkt) >= 3:
-        matches = difflib.get_close_matches(produkt, ALL_PRODUCTS, n=1, cutoff=0.6)
+        # Case-insensitive Vergleich
+        matches = difflib.get_close_matches(produkt.lower(), [p.lower() for p in ALL_PRODUCTS], n=1, cutoff=0.6)
         if matches:
-            produkt = matches[0]
+            produkt = next((p for p in ALL_PRODUCTS if p.lower() == matches[0]), produkt)
 
     submitted = st.form_submit_button("Hinzufügen")
     if submitted and produkt:
-        kategorie = "⚙️ Sonstiges"
-        for kat, items in KATEGORIEN.items():
-            if produkt in items:
-                kategorie = kat
-                break
+        kategorie = next((kat for kat, items in KATEGORIEN.items() if produkt in items), "⚙️ Sonstiges")
         neues_item = {
             "Produkt": produkt,
             "Menge": menge,
@@ -204,43 +175,48 @@ if not data:
     st.info("Liste ist leer.")
 else:
     kategorien_order = [
-        "🍎 Obst","🥦 Gemüse","🥐 Frühstück","🍯 Brotaufstrich","🍫 Süßwaren","🥨 Backwaren",
-        "🌭 Wurst","🧀 Käse","🥛 Molkereiprodukte","🥩 Fleisch","🐟 Fisch","🫘 (Trocken-)Konserven",
-        "🍟 Salzgebäck","🥤 Getränke","🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
+        "🍎 Obst", "🥦 Gemüse", "🥐 Frühstück", "🍯 Brotaufstrich", "🍫 Süßwaren",
+        "🥨 Backwaren", "🌭 Wurst", "🧀 Käse", "🥛 Molkereiprodukte", "🥩 Fleisch",
+        "🐟 Fisch", "🫘 (Trocken-)Konserven", "🍟 Salzgebäck", "🥤 Getränke",
+        "🧴 Drogerie", "🧼 Wasch- und Reinigungsmittel", "⚙️ Sonstiges"
     ]
 
-    unique_stores = sorted(list({x["Einkaufsstätte"] for x in data}))
+    unique_stores = sorted({x["Einkaufsstätte"] for x in data})
     for store in unique_stores:
-        with st.expander(f"🛍 {store}", expanded=True):
-            store_items = [x for x in data if x["Einkaufsstätte"] == store]
-            store_items.sort(key=lambda x: kategorien_order.index(x["Produktkategorie"]))
+        store_items = [x for x in data if x["Einkaufsstätte"] == store]
+        store_items.sort(key=lambda x: kategorien_order.index(x["Produktkategorie"]))
 
-            # Checkbox für gesamte Einkaufsstätte
-            store_done_key = f"store_done_{store}"
-            all_done = all(item["Erledigt"] for item in store_items)
-            mark_all = st.checkbox("", value=all_done, key=store_done_key)
-            if mark_all:
-                for item in store_items:
-                    item["Erledigt"] = True
-            else:
-                for item in store_items:
-                    item["Erledigt"] = False
+        # Überschrift + Checkbox nebeneinander
+        header_col1, header_col2 = st.columns([4, 1])
+        header_col1.markdown(f"### 🛍 {store}")
+        store_done_key = f"store_done_{store}"
+        all_done = all(item["Erledigt"] for item in store_items)
+        mark_all = header_col2.checkbox("Alles erledigt", value=all_done, key=store_done_key)
+        if mark_all:
+            for item in store_items:
+                item["Erledigt"] = True
+            save_data(DATA_FILE, data)
+        else:
+            for item in store_items:
+                item["Erledigt"] = False
             save_data(DATA_FILE, data)
 
-            for i, item in enumerate(store_items):
-                cols = st.columns([3,1,1,1])
-                bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
-                cols[0].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
-                cols[1].markdown(f"<div style='background-color:{bg_color};padding:4px'>{item['Besteller']}</div>", unsafe_allow_html=True)
+        for i, item in enumerate(store_items):
+            cols = st.columns([3, 1, 0.7, 0.7])
+            bg_color = "#d4edda" if item["Erledigt"] else "#ffffff"
+            style = f"background-color:{bg_color};padding:6px;border-radius:8px;"
+            cols[0].markdown(f"<div style='{style}'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
+            cols[1].markdown(f"<div style='{style}'>{item['Besteller']}</div>", unsafe_allow_html=True)
 
-                # ✅ Toggle erledigt
-                if cols[2].button("✅", key=f"done_{store}_{i}"):
-                    item["Erledigt"] = not item["Erledigt"]
-                    save_data(DATA_FILE, data)
-                    safe_rerun()
+            # ✅ erledigt toggeln
+            if cols[2].button("✅", key=f"done_{store}_{i}"):
+                item["Erledigt"] = not item["Erledigt"]
+                save_data(DATA_FILE, data)
+                safe_rerun()
 
-                # ❌ Löschen (direkt)
-                if cols[3].button("❌", key=f"delete_{store}_{i}"):
+            # ❌ löschen mit kurzer Bestätigung
+            if cols[3].button("❌", key=f"delete_{store}_{i}"):
+                if st.confirm(f"Möchtest du **{item['Produkt']}** wirklich löschen?"):
                     data.remove(item)
                     save_data(DATA_FILE, data)
                     safe_rerun()
@@ -249,13 +225,13 @@ else:
 # Archiv & PDF
 # =============================
 st.markdown("---")
-c1,c2 = st.columns(2)
+c1, c2 = st.columns(2)
 if c1.button("💾 Einkauf speichern"):
     if data:
         datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
         filename = os.path.join(ARCHIV_DIR, f"einkauf_{datum}.json")
         save_data(filename, data)
-        st.success(f"Einkaufsliste als {filename} gespeichert!")
+        st.success(f"Einkaufsliste gespeichert als **{filename}**")
 
 if c2.button("📄 PDF exportieren"):
     export_pdf(data)
