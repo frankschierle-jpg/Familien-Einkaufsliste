@@ -5,13 +5,23 @@ from datetime import datetime
 import difflib
 
 # =============================
-# PDF optional importieren
+# Optional: PDF Export
 # =============================
 try:
     from fpdf import FPDF
     PDF_AVAILABLE = True
 except ModuleNotFoundError:
     PDF_AVAILABLE = False
+
+# =============================
+# Optional: Marktguru
+# =============================
+try:
+    from marktguru import Marktguru
+    MG_AVAILABLE = True
+    mg = Marktguru()  # Direkt nutzbar, kein API-Key nötig
+except ModuleNotFoundError:
+    MG_AVAILABLE = False
 
 # =============================
 # Hilfsfunktionen
@@ -74,16 +84,15 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
 DATA_FILE = "einkaufsliste.json"
 ARCHIV_DIR = "archiv"
 os.makedirs(ARCHIV_DIR, exist_ok=True)
-
 data = load_data(DATA_FILE)
 
-# session_state initialisieren für Confirm-Flags
+# Session-Flags
 if "confirm_delete_item" not in st.session_state:
-    st.session_state.confirm_delete_item = None  # stores global_index to confirm single delete
+    st.session_state.confirm_delete_item = None
 if "confirm_delete_store" not in st.session_state:
-    st.session_state.confirm_delete_store = None  # stores store name to confirm deleting all
+    st.session_state.confirm_delete_store = None
 if "all_marked_store" not in st.session_state:
-    st.session_state.all_marked_store = {}  # per-store checkbox state (True/False)
+    st.session_state.all_marked_store = {}
 
 # Alte Einträge kompatibel machen
 for item in data:
@@ -92,61 +101,30 @@ for item in data:
     item.setdefault("Erledigt", False)
 
 # =============================
-# Kategorien (Beispiel-Liste)
+# Kategorien
 # =============================
 KATEGORIEN = {
-    "🍎 Obst": ["Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere","Blaubeere",
-                "Melone","Wassermelone","Mango","Ananas","Orange","Mandarine","Zitrone","Limette",
-                "Kiwi","Granatapfel","Feige","Aprikose","Passionsfrucht","Avocado","Cantaloupe",
-                "Papaya","Johannisbeere","Holunderbeere","Preiselbeere","Rhabarber","Clementine",
-                "Blutorange","Physalis","Nektarine","Brombeere","Boysenbeere","Kumquat","Sternfrucht",
-                "Guave","Drachenfrucht","Kaki","Maracuja","Pomelo","Pflaume","Mandarinen","Heidelbeere",
-                "Stachelbeere","Traube rot","Traube grün","Litschi","Granatapfelkern"],
-    "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli",
-                 "Blumenkohl","Zucchini","Aubergine","Lauch","Sellerie","Radieschen","Rote Beete",
-                 "Kohl","Spinat","Feldsalat","Fenchel","Chili","Rucola","Kürbis","Mais","Erbsen",
-                 "Spargel","Okra","Artischocke","Mangold","Wirsing","Rettich","Pak Choi","Chinakohl",
-                 "Bohnen","Linsen","Rosenkohl","Süßkartoffel","Pilze","Shiitake","Champignon"],
-    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch","Steak","Wurst",
-                   "Hähnchenbrust","Pute","Kotelett","Speck","Hacksteak"],
-    "🐟 Fisch": ["Lachs","Forelle","Thunfisch","Seelachs","Garnelen","Kabeljau","Sardinen",
-                 "Makrele","Heilbutt","Hering","Scholle","Rotbarsch"],
-    "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Camembert","Feta","Parmesan","Edamer",
-                "Tilsiter","Bergkäse","Frischkäse","Ziegenkäse"],
-    "🌭 Wurst": ["Salami","Schinken","Mortadella","Lyoner","Bratwurst","Weißwurst","Leberwurst",
-                "Cervelat","Bauernwurst","Mettwurst"],
-    "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter","Schmand","Kefir","Buttermilch",
-                            "Lassi","Molke","Frischmilch","Schlagsahne"],
-    "🥨 Backwaren": ["Brot","Vollkornbrot","Weizenbrot","Roggenbrot","Brötchen","Croissant","Brezel",
-                     "Toast","Ciabatta","Baguette","Kaiserbrötchen","Laugensemmel","Schwarzbrot",
-                     "Dinkelbrot","Rosinenbrötchen","Focaccia","Pain de Campagne","Fladenbrot",
-                     "Pita","Bagel","Muffin"],
-    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade","Erdbeermarmelade","Konfitüre","Pflaumenmus",
-                         "Aprikosenmarmelade","Kirschmarmelade","Orangenmarmelade","Erdnussbutter",
-                         "Haselnusscreme","Schokocreme","Fruchtaufstrich","Nuss-Nougat"],
-    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel","Gummibärchen","Bonbons","Mars","Snickers",
-                   "Twix","Riegel","Lakritz","Smarties","KitKat","Ferrero Rocher","Toffifee","Pralinen"],
-    "🍟 Salzgebäck": ["Chips","Erdnussflips","Salzstangen","Cracker","Brezelsticks","Cheeseballs",
-                     "Käsecracker","Popcorn gesalzen","Käsechips","Maischips"],
-    "🧴 Drogerie": ["Zahnpasta","Zahnbürste","Shampoo","Nivea","Seife","Duschgel","Rasiergel",
-                   "Deodorant","Haarspülung","Handcreme","Sonnencreme","Lotion"],
-    "🥤 Getränke": ["Cola","Coca-Cola","Bier","Wasser","Saft","Tee","Kaffee","Wein","Limo",
-                   "Orangensaft","Apfelsaft","Eistee","Mineralwasser"],
-    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Badreiniger","Spülmaschinentabs",
-                                       "Allzweckreiniger","Spülmittelflasche","Bodenreiniger",
-                                       "WC-Reiniger","Fleckenentferner","Desinfektionsmittel"],
-    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Wildreis","Langkornreis","Risotto Reis","Spaghetti",
-                               "Tagliatelle","Spätzle","Mais","Tomaten ganz","Tomaten gestückelt",
-                               "Kichererbsen","Erbsen","Kidneybohnen","Bulgur","Quinoa","Couscous",
-                               "Rote Linsen","Gelbe Linsen","Haferflocken","Kokosmilch","Tomatenmark"],
+    "🍎 Obst": ["Apfel","Banane","Birne","Pfirsich","Kirsche","Traube","Erdbeere","Himbeere","Blaubeere"],
+    "🥦 Gemüse": ["Tomate","Gurke","Paprika","Zwiebel","Knoblauch","Kartoffel","Karotte","Brokkoli"],
+    "🥩 Fleisch": ["Rindfleisch","Hähnchen","Schweinefleisch","Hackfleisch"],
+    "🐟 Fisch": ["Lachs","Forelle","Thunfisch"],
+    "🧀 Käse": ["Gouda","Emmentaler","Mozzarella","Feta"],
+    "🌭 Wurst": ["Salami","Schinken","Mortadella","Lyoner"],
+    "🥛 Molkereiprodukte": ["Milch","Joghurt","Sahne","Quark","Butter"],
+    "🥨 Backwaren": ["Brot","Brötchen","Croissant","Baguette"],
+    "🍯 Brotaufstrich": ["Nutella","Honig","Marmelade"],
+    "🍫 Süßwaren": ["Schokolade","Milka","Kinderriegel"],
+    "🍟 Salzgebäck": ["Chips","Salzstangen","Cracker"],
+    "🧴 Drogerie": ["Zahnpasta","Shampoo","Seife","Duschgel"],
+    "🥤 Getränke": ["Cola","Wasser","Saft","Tee"],
+    "🧼 Wasch- und Reinigungsmittel": ["Waschpulver","Glasreiniger","Allzweckreiniger"],
+    "🫘 (Trocken-)Konserven": ["Linsen","Bohnen","Reis","Spaghetti"],
     "⚙️ Sonstiges": []
 }
-
-# Für case-insensitive matching
 ALL_PRODUCTS = sorted({p.lower(): p for items in KATEGORIEN.values() for p in items}.values())
 
 # =============================
-# Login (einfach)
+# Login
 # =============================
 PASSWORD = "geheim123"
 if "logged_in" not in st.session_state:
@@ -177,7 +155,7 @@ if st.button("🚪 Logout"):
     safe_rerun()
 
 # =============================
-# Formular: Neues Produkt hinzufügen
+# Neues Produkt hinzufügen
 # =============================
 with st.form("add_item", clear_on_submit=True):
     produkt_input = st.text_input("Produktname (ab 3 Buchstaben)").strip()
@@ -186,13 +164,11 @@ with st.form("add_item", clear_on_submit=True):
 
     produkt = produkt_input
     if len(produkt) >= 3:
-        # case-insensitive closest match
         matches = difflib.get_close_matches(produkt.lower(), [p.lower() for p in ALL_PRODUCTS], n=1, cutoff=0.6)
         if matches:
             produkt = next((p for p in ALL_PRODUCTS if p.lower() == matches[0]), produkt)
 
     if st.form_submit_button("Hinzufügen") and produkt:
-        # determine category (case-sensitive match against KATEGORIEN values)
         kategorie = next((kat for kat, items in KATEGORIEN.items() if produkt in items), "⚙️ Sonstiges")
         neues_item = {
             "Produkt": produkt,
@@ -205,6 +181,23 @@ with st.form("add_item", clear_on_submit=True):
         data.append(neues_item)
         save_data(DATA_FILE, data)
         st.success(f"{kategorie} {produkt} hinzugefügt!")
+
+        # =============================
+        # Marktguru Preisschau
+        # =============================
+        if MG_AVAILABLE:
+            st.info("💰 Preise von Marktguru:")
+            try:
+                results = mg.search(produkt)  # Suche nach Produkt
+                if results:
+                    for r in results[:5]:  # max. 5 Ergebnisse
+                        st.markdown(f"- {r['product_name']} ({r['store_name']}) — {r['price']} €")
+                else:
+                    st.write("Keine aktuellen Preise gefunden.")
+            except Exception as e:
+                st.error(f"Fehler beim Abrufen der Preise: {e}")
+        else:
+            st.warning("Installiere 'marktguru', um Preise anzuzeigen: pip install marktguru")
 
 # =============================
 # Einkaufsliste anzeigen
@@ -220,12 +213,9 @@ else:
         "🍫 Süßwaren","🍟 Salzgebäck","🥤 Getränke",
         "🧴 Drogerie","🧼 Wasch- und Reinigungsmittel","⚙️ Sonstiges"
     ]
-
     unique_stores = sorted({x["Einkaufsstätte"] for x in data})
-    # Render per store
     for store in unique_stores:
         store_items = [x for x in data if x["Einkaufsstätte"] == store]
-        # sort by category order (if unknown category, put at end)
         def cat_index(it):
             try:
                 return kategorien_order.index(it.get("Produktkategorie", "⚙️ Sonstiges"))
@@ -233,23 +223,17 @@ else:
                 return len(kategorien_order)
         store_items.sort(key=cat_index)
 
-        # header with checkbox on the right (Alles markiert)
         hcol, cbcol = st.columns([0.92, 0.08])
         hcol.markdown(f"### 🛍 {store}")
-        # initialize stored state if missing
         if store not in st.session_state.all_marked_store:
             st.session_state.all_marked_store[store] = False
-        # single checkbox (no label)
         new_val = cbcol.checkbox("", value=st.session_state.all_marked_store.get(store, False), key=f"all_marked_{store}")
-        # update stored flag
         st.session_state.all_marked_store[store] = bool(new_val)
 
-        # show delete-all-confirmation UI if a deletion-all was triggered
         if st.session_state.confirm_delete_store == store:
             warning_cols = st.columns([3,1,1])
             warning_cols[0].warning(f"SOLLEN ALLE PRODUKTE IN **{store}** GELÖSCHT WERDEN?")
             if warning_cols[1].button("Ja, alle löschen", key=f"confirm_del_store_yes_{store}"):
-                # remove items of this store
                 data = [d for d in data if d["Einkaufsstätte"] != store]
                 save_data(DATA_FILE, data)
                 st.session_state.confirm_delete_store = None
@@ -258,27 +242,20 @@ else:
                 st.session_state.confirm_delete_store = None
                 safe_rerun()
 
-        # render items
         for local_i, item in enumerate(store_items):
-            # get global index for unique id (handles duplicates by finding index of this exact dict)
             try:
                 global_index = data.index(item)
             except ValueError:
-                # fallback: continue (item likely removed)
                 continue
-
-            cols = st.columns([3, 1, 0.8, 0.8])
+            cols = st.columns([3,1,0.8,0.8])
             bg_color = "#d4edda" if item.get("Erledigt") else "#ffffff"
             border_color = "#28a745" if item.get("Erledigt") else "#e0e0e0"
             style = f"background-color:{bg_color};border:1px solid {border_color};padding:6px;border-radius:8px;"
             cols[0].markdown(f"<div style='{style}'>{item.get('Produktkategorie')} <b>{item.get('Produkt')}</b> — {item.get('Menge')}</div>", unsafe_allow_html=True)
             cols[1].markdown(f"<div style='{style}'>{item.get('Besteller')}</div>", unsafe_allow_html=True)
 
-            # ✅: if 'Alles markiert' is True, a ✅ click should toggle all items in store;
-            # if False, it toggles only this item.
             if cols[2].button("✅", key=f"done_{store}_{global_index}"):
                 if st.session_state.all_marked_store.get(store, False):
-                    # toggle all in this store: if all currently done -> set false, else set true
                     currently_all = all(it.get("Erledigt") for it in store_items)
                     for it in store_items:
                         it["Erledigt"] = not currently_all
@@ -287,29 +264,21 @@ else:
                 save_data(DATA_FILE, data)
                 safe_rerun()
 
-            # ❌ delete: if all_marked active -> trigger deletion of all with confirmation,
-            # else prompt single-item confirmation using session flag
             if cols[3].button("❌", key=f"del_{store}_{global_index}"):
                 if st.session_state.all_marked_store.get(store, False):
-                    # set store-delete-confirm flag
                     st.session_state.confirm_delete_store = store
                     safe_rerun()
                 else:
-                    # set single-item delete confirm flag to this global_index
                     st.session_state.confirm_delete_item = global_index
                     safe_rerun()
 
-            # If single delete confirmation for this item is active, show inline Yes/No
             if st.session_state.confirm_delete_item == global_index:
                 confirm_cols = st.columns([3,1,1])
                 confirm_cols[0].warning(f"Produkt **{item.get('Produkt')}** wirklich löschen?")
                 if confirm_cols[1].button("Ja, löschen", key=f"del_yes_{global_index}"):
-                    # remove by identity (global_index ensures correct item)
-                    # re-check that index still valid
                     if global_index < len(data) and data[global_index] == item:
                         data.pop(global_index)
                     else:
-                        # fallback remove by matching fields (first match)
                         for idx, dd in enumerate(data):
                             if dd.get("Produkt") == item.get("Produkt") and dd.get("Einkaufsstätte") == item.get("Einkaufsstätte"):
                                 data.pop(idx)
@@ -325,7 +294,7 @@ else:
 # Archiv, Speichern, Abschließen
 # =============================
 st.markdown("---")
-c1, c2, c3 = st.columns(3)
+c1,c2,c3 = st.columns(3)
 if c1.button("💾 Einkauf speichern"):
     if data:
         datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -341,14 +310,13 @@ if c3.button("🧾 Einkauf abschließen"):
         datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
         filename = os.path.join(ARCHIV_DIR, f"abgeschlossen_{datum}.json")
         save_data(filename, data)
-        # clear current list
         data = []
         save_data(DATA_FILE, data)
         st.success("🧾 Einkauf abgeschlossen und archiviert!")
         safe_rerun()
 
 # =============================
-# Abgeschlossene Einkäufe anzeigen (Registrierkassen-Icon)
+# Abgeschlossene Einkäufe
 # =============================
 st.markdown("---")
 st.subheader("🧾 Abgeschlossene Einkäufe")
@@ -357,7 +325,6 @@ if not archiv_files:
     st.info("Noch keine abgeschlossenen Einkäufe.")
 else:
     for f in archiv_files:
-        # show readable date in expander title
         date_str = f.replace("abgeschlossen_", "").replace("einkauf_", "").replace(".json", "")
         with st.expander(f"🧾 Einkauf vom {date_str}"):
             einkauf = load_data(os.path.join(ARCHIV_DIR, f))
@@ -367,5 +334,4 @@ else:
                 for item in einkauf:
                     st.markdown(f"- {item.get('Produktkategorie')} **{item.get('Produkt')}** — {item.get('Menge')} ({item.get('Einkaufsstätte')})")
 
-# speichere laufende daten am Ende
 save_data(DATA_FILE, data)
