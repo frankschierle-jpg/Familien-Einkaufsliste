@@ -50,7 +50,6 @@ def export_pdf(data, filename="Einkaufsliste.pdf"):
 # Hilfsfunktionen
 # =============================
 def safe_rerun():
-    """Sicheres Rerun der Streamlit-App"""
     try:
         st.rerun()
     except AttributeError:
@@ -105,7 +104,7 @@ ARCHIV_DIR = "archiv"
 os.makedirs(ARCHIV_DIR, exist_ok=True)
 data = load_data(DATA_FILE)
 
-# Alte Daten kompatibel machen
+# Alte Daten ergänzen
 for item in data:
     item.setdefault("Produktkategorie", "⚙️ Sonstiges")
     item.setdefault("Besteller", "Unbekannt")
@@ -134,7 +133,6 @@ KATEGORIEN = {
     "⚙️ Sonstiges": []
 }
 
-# Produktsuche case-insensitiv
 ALL_PRODUCTS = sorted({p.lower(): p for items in KATEGORIEN.values() for p in items}.values())
 
 # =============================
@@ -147,7 +145,6 @@ with st.form("add_item", clear_on_submit=True):
 
     produkt = produkt_input.capitalize()
     if len(produkt) >= 3:
-        # Case-insensitive Vergleich
         matches = difflib.get_close_matches(produkt.lower(), [p.lower() for p in ALL_PRODUCTS], n=1, cutoff=0.6)
         if matches:
             produkt = next((p for p in ALL_PRODUCTS if p.lower() == matches[0]), produkt)
@@ -171,6 +168,7 @@ with st.form("add_item", clear_on_submit=True):
 # Einkaufsliste anzeigen
 # =============================
 st.subheader("🧾 Einkaufsliste")
+
 if not data:
     st.info("Liste ist leer.")
 else:
@@ -192,14 +190,9 @@ else:
         store_done_key = f"store_done_{store}"
         all_done = all(item["Erledigt"] for item in store_items)
         mark_all = header_col2.checkbox("Alles erledigt", value=all_done, key=store_done_key)
-        if mark_all:
-            for item in store_items:
-                item["Erledigt"] = True
-            save_data(DATA_FILE, data)
-        else:
-            for item in store_items:
-                item["Erledigt"] = False
-            save_data(DATA_FILE, data)
+        for item in store_items:
+            item["Erledigt"] = mark_all
+        save_data(DATA_FILE, data)
 
         for i, item in enumerate(store_items):
             cols = st.columns([3, 1, 0.7, 0.7])
@@ -208,24 +201,29 @@ else:
             cols[0].markdown(f"<div style='{style}'>{item['Produktkategorie']} {item['Produkt']} — {item['Menge']}</div>", unsafe_allow_html=True)
             cols[1].markdown(f"<div style='{style}'>{item['Besteller']}</div>", unsafe_allow_html=True)
 
-            # ✅ erledigt toggeln
             if cols[2].button("✅", key=f"done_{store}_{i}"):
                 item["Erledigt"] = not item["Erledigt"]
                 save_data(DATA_FILE, data)
                 safe_rerun()
 
-            # ❌ löschen mit kurzer Bestätigung
             if cols[3].button("❌", key=f"delete_{store}_{i}"):
-                if st.confirm(f"Möchtest du **{item['Produkt']}** wirklich löschen?"):
+                # einfache Bestätigung mit Session-Flag
+                if "confirm_delete" not in st.session_state:
+                    st.session_state.confirm_delete = None
+                if st.session_state.confirm_delete == i:
                     data.remove(item)
+                    st.session_state.confirm_delete = None
                     save_data(DATA_FILE, data)
                     safe_rerun()
+                else:
+                    st.warning(f"Nochmals ❌ klicken, um **{item['Produkt']}** zu löschen!")
+                    st.session_state.confirm_delete = i
 
 # =============================
-# Archiv & PDF
+# Archiv & PDF & Abschluss
 # =============================
 st.markdown("---")
-c1, c2 = st.columns(2)
+c1, c2, c3 = st.columns(3)
 if c1.button("💾 Einkauf speichern"):
     if data:
         datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -235,5 +233,33 @@ if c1.button("💾 Einkauf speichern"):
 
 if c2.button("📄 PDF exportieren"):
     export_pdf(data)
+
+if c3.button("✅ Einkauf abschließen"):
+    if data:
+        datum = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        filename = os.path.join(ARCHIV_DIR, f"abgeschlossen_{datum}.json")
+        save_data(filename, data)
+        data = []
+        save_data(DATA_FILE, data)
+        st.success("🛒 Einkauf abgeschlossen und archiviert!")
+        safe_rerun()
+
+# =============================
+# Abgeschlossene Einkäufe anzeigen
+# =============================
+st.markdown("## 📦 Abgeschlossene Einkäufe")
+archiv_files = sorted([f for f in os.listdir(ARCHIV_DIR) if f.startswith("abgeschlossen_")], reverse=True)
+if not archiv_files:
+    st.info("Noch keine abgeschlossenen Einkäufe.")
+else:
+    for f in archiv_files:
+        date_str = f.replace("abgeschlossen_", "").replace(".json", "")
+        with st.expander(f"📅 Einkauf vom {date_str}"):
+            einkauf = load_data(os.path.join(ARCHIV_DIR, f))
+            if not einkauf:
+                st.write("_(leer)_")
+            else:
+                for item in einkauf:
+                    st.markdown(f"- {item['Produktkategorie']} **{item['Produkt']}** — {item['Menge']} ({item['Einkaufsstätte']})")
 
 save_data(DATA_FILE, data)
